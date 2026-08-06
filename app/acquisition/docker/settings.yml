@@ -1,0 +1,40 @@
+use_default_settings: true
+
+server:
+  secret_key: "ai-icp-secret"
+  bind_address: "0.0.0.0"
+  limiter: false
+
+search:
+  safe_search: 0
+
+ui:
+  static_use_hash: true
+
+botdetection:
+  enabled: false
+
+enabled_plugins:
+  - Hash plugin
+
+engines:
+  - name: duckduckgo
+    disabled: false
+
+  - name: bing
+    disabled: false
+
+  - name: qwant
+    disabled: false
+
+  - name: mojeek
+    disabled: false
+
+  - name: brave
+    disabled: true
+
+  - name: startpage
+    disabled: true
+
+  - name: wikidata
+    disabled: true
