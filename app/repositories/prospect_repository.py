@@ -7,7 +7,6 @@ class ProspectRepository:
     """
     Gestion de la persistance des prospects.
     """
-
     def create(
         self,
         db: Session,
@@ -47,7 +46,6 @@ class ProspectRepository:
 
         if existing:
             return existing
-
         return self.create(
             db,
             prospect,

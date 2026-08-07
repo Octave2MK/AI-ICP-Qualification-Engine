@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 import os
-
 from dotenv import load_dotenv
-
 load_dotenv()
 
 
@@ -22,14 +20,12 @@ class Settings:
         "http://localhost:8080",
     )
 
-
     SEARXNG_TIMEOUT: int = int(
         os.getenv(
             "SEARXNG_TIMEOUT",
             "30",
         )
     )
-
 
     SEARCH_RETRY_ATTEMPTS: int = int(
         os.getenv(
@@ -38,14 +34,12 @@ class Settings:
         )
     )
 
-
     SEARCH_RETRY_DELAY: float = float(
         os.getenv(
             "SEARCH_RETRY_DELAY",
             "1",
         )
     )
-
 
     SEARCH_RATE_LIMIT_INTERVAL: float = float(
         os.getenv(
@@ -78,6 +72,5 @@ class Settings:
         "OPENAI_API_KEY",
         "",
     )
-
 
 settings = Settings()

@@ -8,7 +8,6 @@ from app.qualification.normalization.sector_normalizer import (
 
 
 class QualificationNormalizer:
-
     @staticmethod
     def normalize(
         result: QualificationResult,
@@ -21,5 +20,4 @@ class QualificationNormalizer:
         result.sector = SectorNormalizer.normalize(
             result.sector
         )
-
         return result

@@ -4,7 +4,6 @@ from app.qualification.dto import QualificationResult
 
 
 class HybridScoringEngine:
-
     @staticmethod
     def calculate_score(
         prospect,
@@ -17,13 +16,11 @@ class HybridScoringEngine:
             )
         )
 
-
         ai_score, ai_details = (
             AIScoringEngine.calculate_score(
                 qualification
             )
         )
-
 
         total_score = (
             acquisition_score
@@ -31,12 +28,10 @@ class HybridScoringEngine:
             ai_score
         )
 
-
         details = (
             acquisition_details
             +
             ai_details
         )
-
 
         return total_score, details

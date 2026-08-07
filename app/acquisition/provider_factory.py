@@ -6,7 +6,6 @@ class ProviderFactory:
     """
     Factory responsable de créer le moteur de recherche.
     """
-
     @staticmethod
     def create(
         provider_name: str = "duckduckgo",
@@ -14,7 +13,6 @@ class ProviderFactory:
 
         if provider_name == "duckduckgo":
             return DuckDuckGoProvider()
-
         raise ValueError(
             f"Unknown search provider: {provider_name}"
         )

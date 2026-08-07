@@ -5,12 +5,10 @@ from app.acquisition.acquisition_models import (
     SearchResult,
 )
 
-
 class SearchProvider(ABC):
     """
     Interface de tous les moteurs de recherche.
     """
-
     @abstractmethod
     def search(
         self,
@@ -25,7 +23,6 @@ class MockSearchProvider(SearchProvider):
     """
     Fournisseur fictif utilisé pour les tests.
     """
-
     def search(
         self,
         query: SearchQuery

@@ -6,14 +6,11 @@ class ProspectExportData:
     linkedin_url: str
     name: str
     headline: str
-
     profession: str
     sector: str
     target_market: str
-
     offer_detected: bool
     icp_match: bool
-
     confidence: float
 
     authority_signals: list[str] = field(
@@ -23,7 +20,7 @@ class ProspectExportData:
     content_signals: list[str] = field(
         default_factory=list
     )
-
+    
     commercial_signals: list[str] = field(
         default_factory=list
     )

@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-
 from app.database.models import Qualification
 from app.qualification.dto import QualificationResult
 
@@ -8,12 +7,10 @@ class QualificationRepository:
     """
     Gestion de la persistance des qualifications IA.
     """
-
     def to_dto(
         self,
         qualification: Qualification,
     ) -> QualificationResult:
-
         return QualificationResult(
             profession=qualification.profession or "",
 
@@ -114,7 +111,7 @@ class QualificationRepository:
         db: Session,
         prospect_id: int,
     ) -> QualificationResult | None:
-
+        
         qualification = (
             db.query(Qualification)
             .filter(
@@ -125,7 +122,6 @@ class QualificationRepository:
 
         if qualification is None:
             return None
-
         return self.to_dto(
             qualification
         )

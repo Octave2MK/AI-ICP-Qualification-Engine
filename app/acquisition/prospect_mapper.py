@@ -7,7 +7,6 @@ class ProspectMapper:
     Transforme une URL OSINT en Prospect SQLAlchemy.
     """
     def _extract_name(self, title: str) -> str:
-
         if not title:
             return "Unknown"
 
@@ -19,7 +18,6 @@ class ProspectMapper:
 
 
     def _extract_job_title(self, title: str) -> str | None:
-
         if "-" not in title:
             return None
 

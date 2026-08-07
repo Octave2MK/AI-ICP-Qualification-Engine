@@ -5,13 +5,10 @@ class Deduplicator:
     """
     Supprime les URLs en double.
     """
-
-
     def deduplicate(
         self,
         urls: list[ProspectCandidate]
     ) -> list[ProspectCandidate]:
-
 
         unique_urls = []
 
@@ -19,16 +16,11 @@ class Deduplicator:
 
 
         for prospect in urls:
-
             if prospect.url not in seen:
-
                 seen.add(
                     prospect.url
                 )
-
                 unique_urls.append(
                     prospect
                 )
-
-
         return unique_urls

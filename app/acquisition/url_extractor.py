@@ -3,15 +3,12 @@ from app.acquisition.acquisition_models import (
     ProspectCandidate,
 )
 
-
 class URLExtractor:
     """
     Extrait les URLs LinkedIn depuis les résultats de recherche.
     """
 
-
     LINKEDIN_PATTERN = "linkedin.com/in/"
-
 
     def extract(
         self,
@@ -20,11 +17,8 @@ class URLExtractor:
 
         urls = []
 
-
         for result in results:
-
             if self.LINKEDIN_PATTERN in result.url:
-
                 urls.append(
                     ProspectCandidate(
                         url=result.url,
@@ -32,6 +26,4 @@ class URLExtractor:
                         snippet=result.snippet,
                     )
                 )
-
-
         return urls

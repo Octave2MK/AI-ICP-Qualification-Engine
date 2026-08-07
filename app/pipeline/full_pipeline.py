@@ -3,18 +3,15 @@ from app.pipeline.icp_pipeline import ICPQualificationPipeline
 
 
 class FullICPWorkflow:
-
     def __init__(
         self,
         acquisition_service,
         osint_enricher: OSINTEnricher,
         qualification_pipeline: ICPQualificationPipeline,
     ):
-
         self.acquisition_service = acquisition_service
         self.osint_enricher = osint_enricher
         self.qualification_pipeline = qualification_pipeline
-
 
 
     def run(
@@ -23,7 +20,6 @@ class FullICPWorkflow:
         icp,
         progress_callback=None,
     ):
-
         if progress_callback:
             progress_callback(
                 5,
@@ -49,10 +45,7 @@ class FullICPWorkflow:
             prospects,
             start=1,
         ):
-
-
             if progress_callback:
-
                 percent = 20 + int(
                     (index / total) * 75
                 )
@@ -63,13 +56,11 @@ class FullICPWorkflow:
                 )
 
             try:
-
                 profile = (
                     self.osint_enricher.enrich(
                         prospect.linkedin_url
                     )
                 )
-
 
                 qualification = (
                     self.qualification_pipeline.run(
@@ -79,7 +70,6 @@ class FullICPWorkflow:
                     )
                 )
 
-
                 results.append(
                     {
                         "prospect": prospect,
@@ -87,10 +77,7 @@ class FullICPWorkflow:
                         "qualification": qualification,
                     }
                 )
-
-
             except Exception as exc:
-
                 results.append(
                     {
                         "prospect": prospect,
@@ -103,6 +90,4 @@ class FullICPWorkflow:
                 100,
                 "Workflow terminé"
             )
-
-
         return results

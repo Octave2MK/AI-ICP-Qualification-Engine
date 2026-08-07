@@ -3,7 +3,6 @@ from app.qualification.icp.icp_definition import ICPDefinition
 
 
 class PromptBuilder:
-
     def build(
         self,
         profile: ProfileData,
@@ -68,7 +67,6 @@ EXPECTED JSON FORMAT
 
         if not icp:
             return ""
-
         return f"""
 TARGET ICP
 

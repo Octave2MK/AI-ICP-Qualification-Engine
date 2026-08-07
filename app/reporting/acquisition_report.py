@@ -7,16 +7,13 @@ class AcquisitionReport:
     des prospects acquis.
     """
 
-
     def generate(
         self,
         prospects: list[Prospect],
         icp
     ) -> str:
 
-
         lines = []
-
 
         lines.append(
             "================================"
@@ -34,7 +31,6 @@ class AcquisitionReport:
             "================================"
         )
 
-
         lines.append("")
 
         lines.append(
@@ -45,13 +41,11 @@ class AcquisitionReport:
             f"Countries: {', '.join(icp.countries)}"
         )
 
-
         lines.append("")
 
         lines.append(
             f"Prospects found: {len(prospects)}"
         )
-
 
         lines.append("")
 
@@ -60,35 +54,28 @@ class AcquisitionReport:
             prospects,
             start=1
         ):
-
             lines.append(
                 f"{index}."
             )
-
 
             lines.append(
                 f"URL: {prospect.linkedin_url}"
             )
 
-
             lines.append(
                 "Status: New"
             )
-
 
             lines.append(
                 "Source: OSINT"
             )
 
-
             lines.append(
                 "-----------------------------"
             )
 
-
         lines.append(
             "================================"
         )
-
-
+        
         return "\n".join(lines)

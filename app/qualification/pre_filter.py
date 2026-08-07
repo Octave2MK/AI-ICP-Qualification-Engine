@@ -16,10 +16,8 @@ class ICPPreFilter:
         "business",
     ]
 
-
     @classmethod
     def match(cls, profile) -> bool:
-
         text = " ".join(
             [
                 profile.name or "",
@@ -28,11 +26,7 @@ class ICPPreFilter:
             ]
         ).lower()
 
-
         for keyword in cls.KEYWORDS:
-
             if keyword in text:
                 return True
-
-
         return False

@@ -3,13 +3,11 @@ from app.reporting.export_models import (
 )
 
 
-
 class ExportMapper:
     """
     Transforme les résultats du pipeline
     en données exportables.
     """
-
 
     @staticmethod
     def map(
@@ -19,7 +17,6 @@ class ExportMapper:
         decision,
     ) -> ProspectExportData:
 
-
         return ProspectExportData(
 
             linkedin_url=profile.linkedin_url,
@@ -28,21 +25,17 @@ class ExportMapper:
 
             headline=profile.headline,
 
-
             profession=qualification.profession,
 
             sector=qualification.sector,
 
             target_market=qualification.target_market,
 
-
             offer_detected=qualification.offer_detected,
 
             icp_match=qualification.icp_match,
 
-
             confidence=qualification.confidence,
-
 
             authority_signals=(
                 qualification.authority_signals

@@ -74,14 +74,12 @@ def create_full_workflow(db):
         create_acquisition_pipeline()
     )
 
-
     acquisition_service = (
         AcquisitionService(
             pipeline=acquisition_pipeline,
             repository=ProspectRepository(),
         )
     )
-
 
     # ==========================
     # Enrichment OSINT
@@ -95,13 +93,11 @@ def create_full_workflow(db):
         )
     )
 
-
     osint_enricher = (
         OSINTEnricher(
             enrichment_service
         )
     )
-
 
     # ==========================
     # Qualification
@@ -116,7 +112,6 @@ def create_full_workflow(db):
         )
     )
 
-
     qualification_pipeline = (
         ICPQualificationPipeline(
             qualification_service=qualification_service,
@@ -125,7 +120,6 @@ def create_full_workflow(db):
             icp_name="business_coach",
         )
     )
-
 
     # ==========================
     # Workflow complet

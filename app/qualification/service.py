@@ -35,12 +35,8 @@ class QualificationService:
         )
 
         response = self._llm.analyze(prompt)
-
         result = self._parser.parse(response)
-
         result = QualificationNormalizer.normalize(result)
-
         self._validator.validate(result)
-
         return result
 

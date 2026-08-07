@@ -2,13 +2,10 @@ import csv
 from pathlib import Path
 
 
-
 class CSVExporter:
-
     """
     Export CSV des prospects qualifiés.
     """
-
 
     def export(
         self,
@@ -18,16 +15,13 @@ class CSVExporter:
 
         path = Path(filepath)
 
-
         with path.open(
             "w",
             newline="",
             encoding="utf-8",
         ) as file:
 
-
             writer = csv.writer(file)
-
 
             writer.writerow(
                 [
@@ -48,11 +42,8 @@ class CSVExporter:
                 ]
             )
 
-
             for prospect in prospects:
-
                 if hasattr(prospect, "url"):
-
                     writer.writerow(
                         [
                             prospect.url,
@@ -71,9 +62,7 @@ class CSVExporter:
                             "",
                         ]
                     )
-
                 else:
-
                     writer.writerow(
                         [
                             prospect.linkedin_url,
@@ -100,6 +89,5 @@ class CSVExporter:
                             prospect.exclusion_reason,
                         ]
                     )
-
 
         return path

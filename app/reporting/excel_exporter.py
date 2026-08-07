@@ -1,15 +1,11 @@
 from pathlib import Path
-
 from openpyxl import Workbook
 
 
-
 class ExcelExporter:
-
     """
     Export Excel des prospects qualifiés.
     """
-
 
     HEADERS = [
         "linkedin_url",
@@ -28,16 +24,13 @@ class ExcelExporter:
         "exclusion_reason",
     ]
 
-
     def export(
         self,
         prospects,
         filepath: str,
     ) -> Path:
 
-
         path = Path(filepath)
-
 
         workbook = Workbook()
 
@@ -45,16 +38,12 @@ class ExcelExporter:
 
         sheet.title = "Prospects"
 
-
         sheet.append(
             self.HEADERS
         )
 
-
         for prospect in prospects:
-
             if hasattr(prospect, "url"):
-
                 sheet.append(
                     [
                         prospect.url,
@@ -73,9 +62,7 @@ class ExcelExporter:
                         "",
                     ]
                 )
-
             else:
-
                 sheet.append(
                     [
                         prospect.linkedin_url,
@@ -102,7 +89,6 @@ class ExcelExporter:
                         prospect.exclusion_reason,
                     ]
                 )
-
 
         workbook.save(path)
 

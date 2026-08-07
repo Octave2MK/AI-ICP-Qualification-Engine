@@ -9,7 +9,6 @@ from app.enrichment.interfaces.cleaner import BaseCleaner
 
 class EnrichmentService:
     """Orchestre l'enrichissement complet d'un profil."""
-
     def __init__(
             self,
             fetcher: BaseFetcher | None = None,
@@ -22,14 +21,11 @@ class EnrichmentService:
 
     def enrich(self, linkedin_url: str) -> ProfileData:
         html = self.fetcher.fetch(linkedin_url)
-
         profile = self.extractor.extract(
             html=html,
             linkedin_url=linkedin_url,
         )
-
         profile.clean_text = self.cleaner.clean(
             profile.raw_text
         )
-
         return profile

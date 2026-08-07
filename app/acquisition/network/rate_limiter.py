@@ -5,7 +5,6 @@ class RateLimiter:
     """
     Limite le nombre d'appels dans le temps.
     """
-
     def __init__(
         self,
         min_interval: float = 1.0,
@@ -24,5 +23,4 @@ class RateLimiter:
             time.sleep(
                 self.min_interval - elapsed
             )
-
         self.last_call = time.time()

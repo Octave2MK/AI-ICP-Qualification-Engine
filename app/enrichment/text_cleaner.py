@@ -6,7 +6,6 @@ class TextCleaner:
 
     URL_PATTERN = re.compile(r"https?://\S+|www\.\S+")
     HASHTAG_PATTERN = re.compile(r"#\w+")
-
     def clean(self, text: str) -> str:
         text = self.URL_PATTERN.sub("", text)
 

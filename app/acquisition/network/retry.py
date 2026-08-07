@@ -10,9 +10,7 @@ def retry(
     """
     Réessaie une fonction en cas d'erreur.
     """
-
     def decorator(func):
-
         @wraps(func)
         def wrapper(*args, **kwargs):
 
@@ -21,7 +19,6 @@ def retry(
             for attempt in range(attempts):
                 try:
                     return func(*args, **kwargs)
-
                 except exceptions as exc:
                     last_exception = exc
 
@@ -29,9 +26,6 @@ def retry(
                         time.sleep(
                             delay * (attempt + 1)
                         )
-
             raise last_exception
-
         return wrapper
-
     return decorator

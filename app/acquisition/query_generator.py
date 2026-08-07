@@ -13,7 +13,6 @@ class QueryGenerator:
 
         for title in icp.job_titles:
             for country in icp.countries:
-
                 query = (
                     f'{self.BASE_QUERY} '
                     f'"{title}" '
@@ -23,5 +22,4 @@ class QueryGenerator:
                 queries.append(
                     SearchQuery(text=query)
                 )
-
         return queries
