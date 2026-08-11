@@ -3,6 +3,11 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# URL de la base de données
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///data/icp.db"
+)
 
 @dataclass(frozen=True)
 class Settings:
