@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from app.config.settings import DATABASE_URL
+from app.core.settings import DATABASE_URL
 import os
 DEBUG_SQL = os.getenv("SQL_DEBUG", "false").lower() == "true"
 
