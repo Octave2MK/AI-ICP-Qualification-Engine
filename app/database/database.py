@@ -1,11 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config.settings import DATABASE_URL
+import os
+DEBUG_SQL = os.getenv("SQL_DEBUG", "false").lower() == "true"
 
 # Création du moteur SQLAlchemy
 engine = create_engine(
     DATABASE_URL,
-    echo=True
+    echo=DEBUG_SQL
 )
 
 # Fabrique de sessions

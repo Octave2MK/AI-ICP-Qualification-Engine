@@ -12,7 +12,7 @@ class Settings:
 
     SEARCH_PROVIDER: str = os.getenv(
     "SEARCH_PROVIDER",
-    "searxng",
+    "duckduckgo",
     )
 
     SEARXNG_BASE_URL: str = os.getenv(
@@ -65,7 +65,7 @@ class Settings:
 
     GEMINI_MODEL: str = os.getenv(
         "GEMINI_MODEL",
-        "gemini-2.5-flash",
+        "gemini-3.6-flash",
     )
 
     OPENAI_API_KEY: str = os.getenv(
