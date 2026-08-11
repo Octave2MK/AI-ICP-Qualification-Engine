@@ -12,7 +12,7 @@ class Settings:
 
     SEARCH_PROVIDER: str = os.getenv(
     "SEARCH_PROVIDER",
-    "duckduckgo",
+    "searxng",
     )
 
     SEARXNG_BASE_URL: str = os.getenv(
