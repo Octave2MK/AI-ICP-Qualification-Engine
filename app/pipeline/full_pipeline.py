@@ -1,3 +1,4 @@
+from app.qualification.icp.icp_mapper import ICPMapper
 from app.enrichment.osint_enricher import OSINTEnricher
 from app.pipeline.icp_pipeline import ICPQualificationPipeline
 
@@ -62,11 +63,16 @@ class FullICPWorkflow:
                     )
                 )
 
+                qualification_icp = (
+                    ICPMapper.to_definition(icp)
+                )                
+
                 qualification = (
                     self.qualification_pipeline.run(
                         db,
                         prospect,
                         profile,
+                        qualification_icp,
                     )
                 )
 

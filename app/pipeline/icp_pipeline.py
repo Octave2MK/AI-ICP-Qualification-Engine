@@ -4,7 +4,6 @@ from app.qualification.service import QualificationService
 from app.qualification.decision.decision_engine import DecisionEngine
 from app.scoring.hybrid_scoring import HybridScoringEngine
 from app.qualification.icp.icp_definition import ICPDefinition
-from app.qualification.config.icp_loader import ICPLoader
 from app.qualification.pre_filter import ICPPreFilter
 
 
@@ -13,20 +12,17 @@ class ICPQualificationPipeline:
         self,
         qualification_service: QualificationService,
         qualification_repository,
-        icp_loader: ICPLoader,
-        icp_name: str,
     ):
         self._qualification_service = qualification_service
         self._qualification_repository = qualification_repository
-        self._icp = icp_loader.load(icp_name)
 
     def run(
         self,
         db,
         prospect,
         profile: ProfileData,
+        icp: ICPDefinition,
     ):
-        
         # 1 - Vérification exclusion
         exclusion = ExclusionEngine.check(
             profile
@@ -39,8 +35,11 @@ class ICPQualificationPipeline:
                 "score": 0,
             }
 
-        # Pré-filtrage avant Gemini
-        if not ICPPreFilter.match(profile):
+        # 2 - Pré-filtrage avant Gemini
+        if not ICPPreFilter.match(
+            profile,
+            icp,
+        ):
             return {
                 "status": "FILTERED",
                 "decision": "REJECT",
@@ -48,7 +47,7 @@ class ICPQualificationPipeline:
                 "reason": "Profil non pertinent pour ICP",
             }
 
-        # 2 - Qualification IA
+        # 3 - Vérification du cache
         cached = (
             self._qualification_repository.get_by_prospect_id(
                 db,
@@ -57,7 +56,9 @@ class ICPQualificationPipeline:
         )
 
         if cached:
-            decision = DecisionEngine.decide(cached)
+            decision = DecisionEngine.decide(
+                cached
+            )
 
             score, details = (
                 HybridScoringEngine.calculate_score(
@@ -65,6 +66,7 @@ class ICPQualificationPipeline:
                     cached,
                 )
             )
+
             return {
                 "decision": decision,
                 "qualification": cached,
@@ -73,33 +75,38 @@ class ICPQualificationPipeline:
                 "cached": True,
             }
 
+        # 4 - Qualification IA selon l'ICP dynamique
         qualification = (
             self._qualification_service.qualify(
                 profile,
-                self._icp,
+                icp,
             )
         )
 
+        # 5 - Persistance
         self._qualification_repository.save(
             db,
             prospect.id,
             qualification,
         )
 
+        # 6 - Décision
         decision = DecisionEngine.decide(
             qualification
         )
 
+        # 7 - Score hybride
         score, details = (
             HybridScoringEngine.calculate_score(
                 prospect,
                 qualification,
             )
         )
+
         return {
             "decision": decision,
             "qualification": qualification,
             "score": score,
             "details": details,
             "cached": False,
-        }      
+        }

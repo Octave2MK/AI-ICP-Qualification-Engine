@@ -39,9 +39,6 @@ from app.qualification.service import (
     QualificationService,
 )
 
-from app.qualification.config.icp_loader import (
-    ICPLoader,
-)
 
 from app.qualification.llm.prompts import (
     PromptBuilder,
@@ -116,8 +113,6 @@ def create_full_workflow(db):
         ICPQualificationPipeline(
             qualification_service=qualification_service,
             qualification_repository=QualificationRepository(),
-            icp_loader=ICPLoader(),
-            icp_name="business_coach",
         )
     )
 
