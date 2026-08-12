@@ -49,10 +49,10 @@ class RelevanceFilter:
         Évalue un candidat et retourne son score de pertinence.
         """
 
-        title = self._normalize(candidate.title)
-        snippet = self._normalize(candidate.snippet)
-
+        title = self._normalize(candidate.title or "")
+        snippet = self._normalize(candidate.snippet or "")
         searchable_text = f"{title} {snippet}".strip()
+
 
         score = 0
 
@@ -213,13 +213,38 @@ class RelevanceFilter:
         term: str,
     ) -> bool:
         """
-        Recherche un terme comme expression indépendante,
-        tout en supportant les expressions composées.
+        Recherche un terme dans un texte.
+
+        La recherche accepte :
+        - le terme exact ;
+        - une variante plurielle simple avec 's'.
+
+        Exemples :
+            entrepreneur -> entrepreneur
+            entrepreneur -> entrepreneurs
+            coach -> coach
+            coach -> coaches
         """
 
         if not text or not term:
             return False
 
+        # Recherche exacte
         pattern = r"(?<!\w)" + re.escape(term) + r"(?!\w)"
 
-        return bool(re.search(pattern, text))
+        if re.search(pattern, text):
+            return True
+
+        # Tolérance du pluriel simple
+        if not term.endswith("s"):
+            plural_pattern = (
+                r"(?<!\w)"
+                + re.escape(term)
+                + r"s"
+                + r"(?!\w)"
+            )
+
+            if re.search(plural_pattern, text):
+                return True
+
+        return False
