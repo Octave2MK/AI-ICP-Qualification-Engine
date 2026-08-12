@@ -2,28 +2,19 @@ from app.acquisition.acquisition_models import (
     ICP,
     ProspectCandidate,
 )
-
 from app.acquisition.query_generator import QueryGenerator
-
 from app.acquisition.search_provider import SearchProvider
-
 from app.acquisition.url_extractor import URLExtractor
-
 from app.acquisition.normalizer import URLNormalizer
-
 from app.acquisition.relevance_filter import RelevanceFilter
-
 from app.acquisition.deduplicator import Deduplicator
-
 from app.acquisition.prospect_mapper import ProspectMapper
-
 from app.core.logging import get_logger
 
 
 class AcquisitionPipeline:
-    logger = get_logger(
-        "AcquisitionPipeline"
-    )
+    logger = get_logger("AcquisitionPipeline")
+
     """
     Pipeline complet d'acquisition OSINT.
     """
@@ -38,32 +29,19 @@ class AcquisitionPipeline:
         deduplicator: Deduplicator,
         prospect_mapper: ProspectMapper,
     ):
-
         self.query_generator = query_generator
-
         self.search_provider = search_provider
-
         self.url_extractor = url_extractor
-
         self.relevance_filter = relevance_filter
-
         self.normalizer = normalizer
-
         self.deduplicator = deduplicator
-
         self.prospect_mapper = prospect_mapper
 
-
-    def run(
-        self,
-        icp: ICP
-    ) -> list[ProspectCandidate]:
+    def run(self, icp: ICP) -> list[ProspectCandidate]:
         all_results = []
 
         # 1. Génération des requêtes
-        queries = (
-            self.query_generator.generate(icp)
-        )
+        queries = self.query_generator.generate(icp)
 
         # 2. Recherche
         for query in queries:
@@ -73,20 +51,16 @@ class AcquisitionPipeline:
                     query.text,
                 )
 
-                results = (
-                    self.search_provider.search(query)
-                )
-
+                results = self.search_provider.search(query)
                 all_results.extend(results)
 
-                print("\nQUERY:", query.text)
-                print("SEARCH RESULTS:", len(results))
+                self.logger.info(
+                    "Search returned %s results for query: %s",
+                    len(results),
+                    query.text,
+                )
 
-                for r in results[:3]:
-                    print(r.url)
-                    print(r.title)
             except Exception as exc:
-
                 self.logger.error(
                     "Search failed for query %s: %s",
                     query.text,
@@ -94,10 +68,26 @@ class AcquisitionPipeline:
                 )
                 continue
 
-        # 3. Filtrage de pertinence
+        # 3. Restriction à la source cible avant le scoring.
+        #    Le moteur de recherche peut retourner des résultats hors domaine
+        #    malgré l'opérateur site:. Ils ne doivent jamais entrer dans le
+        #    score ICP.
+        linkedin_results = [
+            result
+            for result in all_results
+            if self._is_linkedin_profile(result.url)
+        ]
+
+        self.logger.info(
+            "LinkedIn profile results: %s/%s",
+            len(linkedin_results),
+            len(all_results),
+        )
+
+        # 4. Filtrage de pertinence
         relevant_results = []
 
-        for result in all_results:
+        for result in linkedin_results:
             relevance = self.relevance_filter.evaluate(
                 ProspectCandidate(
                     url=result.url,
@@ -111,63 +101,56 @@ class AcquisitionPipeline:
                 relevant_results.append(result)
 
         self.logger.info(
-            "Relevance filter: %s/%s results passed.",
+            "Relevance filter: %s/%s LinkedIn results passed.",
             len(relevant_results),
-            len(all_results),
+            len(linkedin_results),
         )
 
-        # 4. Extraction des URLs LinkedIn
+        # 5. Extraction des URLs LinkedIn
+        candidates = self.url_extractor.extract(relevant_results)
 
-
-        print("\nRELEVANT RESULTS:", len(relevant_results))
-
-        for result in relevant_results:
-            print("RELEVANT URL:", result.url)
-            print("RELEVANT TITLE:", result.title)
-            print("RELEVANT SNIPPET:", result.snippet)
-
-        urls = (
-            self.url_extractor.extract(relevant_results)
+        self.logger.info(
+            "Extracted LinkedIn profiles: %s",
+            len(candidates),
         )
 
-        print("\nEXTRACTED URLS:", len(urls))
-        for url in urls:
-            print("EXTRACTED:", url)
+        # 6. Normalisation
+        normalized_urls = [
+            self.normalizer.normalize(candidate.url)
+            for candidate in candidates
+        ]
 
-        # 5. Normalisation
-        normalized_urls = []
-
-        for url in urls:
-            normalized_urls.append(
-                self.normalizer.normalize(url)
-            )
-            print("\nNORMALIZED URLS:", len(normalized_urls))
-            for url in normalized_urls[:5]:
-                print(url)
-
-        # 6. Déduplication
-        clean_urls = (
-            self.deduplicator.deduplicate(
-                normalized_urls
-            )
+        # 7. Déduplication
+        clean_urls = self.deduplicator.deduplicate(
+            normalized_urls
         )
-        print("\nDEDUPLICATED URLS:", len(clean_urls))
 
-        for url in clean_urls[:5]:
-            print(url)
+        self.logger.info(
+            "Deduplicated LinkedIn URLs: %s",
+            len(clean_urls),
+        )
+
         return clean_urls
 
-    def run_and_map(
-            self,
-            icp: ICP
-    ):
+    @staticmethod
+    def _is_linkedin_profile(url: str) -> bool:
+        """Return True only for public LinkedIn profile URLs."""
+        if not url:
+            return False
+
+        normalized = url.strip().lower()
+        return (
+            "linkedin.com/in/" in normalized
+            and "linkedin.com/company/" not in normalized
+        )
+
+    def run_and_map(self, icp: ICP):
         urls = self.run(icp)
         prospects = []
+
         for url in urls:
             prospects.append(
                 self.prospect_mapper.map(url)
             )
+
         return prospects
-
-
-
