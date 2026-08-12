@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 @dataclass
 class ICP:
     """
-    Représente un profil cible (Ideal Customer Profile).
+    Représente un profil cible (Ideal Customer Profile)......
     """
     job_titles: list[str]
     countries: list[str]
