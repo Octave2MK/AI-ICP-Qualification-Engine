@@ -14,6 +14,7 @@ class ICPMapper:
     ) -> ICPDefinition:
         return ICPDefinition(
             professions=list(icp.job_titles),
+            sectors=list(icp.sectors),
             target_markets=list(icp.countries),
             required_keywords=list(
                 icp.required_keywords
