@@ -11,6 +11,8 @@ from app.acquisition.url_extractor import URLExtractor
 
 from app.acquisition.normalizer import URLNormalizer
 
+from app.acquisition.relevance_filter import RelevanceFilter
+
 from app.acquisition.deduplicator import Deduplicator
 
 from app.acquisition.prospect_mapper import ProspectMapper
@@ -31,6 +33,7 @@ class AcquisitionPipeline:
         query_generator: QueryGenerator,
         search_provider: SearchProvider,
         url_extractor: URLExtractor,
+        relevance_filter: RelevanceFilter,
         normalizer: URLNormalizer,
         deduplicator: Deduplicator,
         prospect_mapper: ProspectMapper,
@@ -41,6 +44,8 @@ class AcquisitionPipeline:
         self.search_provider = search_provider
 
         self.url_extractor = url_extractor
+
+        self.relevance_filter = relevance_filter
 
         self.normalizer = normalizer
 
@@ -89,14 +94,30 @@ class AcquisitionPipeline:
                 )
                 continue
 
-        # 3. Extraction des URLs LinkedIn
-        urls = (
-            self.url_extractor.extract(all_results)
-        )
-        print("\nEXTRACTED URLS:", len(urls))
+        # 3. Filtrage de pertinence
 
-        for url in urls[:5]:
-            print(url)
+        relevant_results = []
+
+        for result in all_results:
+            relevance = self.relevance_filter.evaluate(
+                result,
+                icp,
+            )
+
+            if relevance.passed:
+                relevant_results.append(result)
+
+        self.logger.info(
+            "Relevance filter: %s/%s results passed.",
+            len(relevant_results),
+            len(all_results),
+        )
+
+        # 4. Extraction des URLs LinkedIn
+
+        urls = (
+            self.url_extractor.extract(relevant_results)
+        )
 
         # 4. Normalisation
         normalized_urls = []
