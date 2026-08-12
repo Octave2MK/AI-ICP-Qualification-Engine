@@ -14,7 +14,6 @@ class FullICPWorkflow:
         self.osint_enricher = osint_enricher
         self.qualification_pipeline = qualification_pipeline
 
-
     def run(
         self,
         db,
@@ -22,58 +21,38 @@ class FullICPWorkflow:
         progress_callback=None,
     ):
         if progress_callback:
-            progress_callback(
-                5,
-                "Recherche des prospects..."
-            )
+            progress_callback(5, "Recherche des prospects...")
 
-        prospects = self.acquisition_service.acquire(
-            db,
-            icp,
-        )
+        prospects = self.acquisition_service.acquire(db, icp)
 
         if progress_callback:
             progress_callback(
                 20,
-                f"{len(prospects)} prospects trouvés"
+                f"{len(prospects)} prospects trouvés",
             )
 
         results = []
         total = len(prospects)
+        qualification_icp = ICPMapper.to_definition(icp)
 
-
-        for index, prospect in enumerate(
-            prospects,
-            start=1,
-        ):
+        for index, prospect in enumerate(prospects, start=1):
             if progress_callback:
-                percent = 20 + int(
-                    (index / total) * 75
-                )
-
+                percent = 20 + int((index / total) * 75) if total else 95
                 progress_callback(
                     percent,
-                    f"Traitement du prospect {index}/{total}"
+                    f"Traitement du prospect {index}/{total}",
                 )
 
             try:
-                profile = (
-                    self.osint_enricher.enrich(
-                        prospect.linkedin_url
-                    )
+                profile = self.osint_enricher.enrich(
+                    prospect.linkedin_url
                 )
 
-                qualification_icp = (
-                    ICPMapper.to_definition(icp)
-                )                
-
-                qualification = (
-                    self.qualification_pipeline.run(
-                        db,
-                        prospect,
-                        profile,
-                        qualification_icp,
-                    )
+                qualification = self.qualification_pipeline.run(
+                    db,
+                    prospect,
+                    profile,
+                    qualification_icp,
                 )
 
                 results.append(
@@ -92,8 +71,6 @@ class FullICPWorkflow:
                 )
 
         if progress_callback:
-            progress_callback(
-                100,
-                "Workflow terminé"
-            )
+            progress_callback(100, "Workflow terminé")
+
         return results
