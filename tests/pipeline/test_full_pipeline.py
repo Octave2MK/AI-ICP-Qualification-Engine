@@ -1,58 +1,36 @@
 from app.pipeline.full_pipeline import FullICPWorkflow
-
 from app.enrichment.dto import ProfileData
+from app.acquisition.acquisition_models import ICP
 
 
 class FakeProspect:
-
     def __init__(self):
         self.id = 1
-        self.linkedin_url = (
-            "linkedin.com/in/john-doe"
-        )
+        self.linkedin_url = "linkedin.com/in/john-doe"
 
 
 class FakeAcquisitionService:
-
     def acquire(self, db, icp):
-
-        return [
-            FakeProspect()
-        ]
-
+        assert isinstance(icp, ICP)
+        return [FakeProspect()]
 
 
 class FakeOSINTEnricher:
-
     def enrich(self, linkedin_url):
-
         return ProfileData(
             linkedin_url=linkedin_url,
             name="John Doe",
             headline="Business Coach",
-            about=(
-                "J'aide les entrepreneurs "
-                "à développer leur activité."
-            ),
-            raw_text=(
-                "Business Coach France"
-            ),
-            clean_text=(
-                "business coach france"
-            ),
+            about="J'aide les entrepreneurs à développer leur activité.",
+            raw_text="Business Coach France",
+            clean_text="business coach france",
         )
 
 
-
 class FakeQualificationPipeline:
-
-    def run(
-        self,
-        db,
-        prospect,
-        profile,
-    ):
-
+    def run(self, db, prospect, profile, icp):
+        assert icp.professions == ["Business Coach"]
+        assert icp.target_markets == ["France"]
         return {
             "decision": "QUALIFIED",
             "score": 90,
@@ -60,54 +38,29 @@ class FakeQualificationPipeline:
         }
 
 
-
 def test_full_icp_workflow():
-
     workflow = FullICPWorkflow(
-        acquisition_service=(
-            FakeAcquisitionService()
-        ),
-        osint_enricher=(
-            FakeOSINTEnricher()
-        ),
-        qualification_pipeline=(
-            FakeQualificationPipeline()
-        ),
+        acquisition_service=FakeAcquisitionService(),
+        osint_enricher=FakeOSINTEnricher(),
+        qualification_pipeline=FakeQualificationPipeline(),
     )
 
+    icp = ICP(
+        job_titles=["Business Coach"],
+        countries=["France"],
+    )
 
     results = workflow.run(
         db=None,
-        icp="business_coach",
+        icp=icp,
     )
-
 
     assert len(results) == 1
-
-
     result = results[0]
 
-
     assert "prospect" in result
-
     assert "profile" in result
-
     assert "qualification" in result
-
-
-    assert (
-        result["profile"].name
-        == "John Doe"
-    )
-
-
-    assert (
-        result["qualification"]["decision"]
-        == "QUALIFIED"
-    )
-
-
-    assert (
-        result["qualification"]["score"]
-        == 90
-    )
+    assert result["profile"].name == "John Doe"
+    assert result["qualification"]["decision"] == "QUALIFIED"
+    assert result["qualification"]["score"] == 90
