@@ -10,6 +10,8 @@ class ICP:
     countries: list[str]
     languages: list[str] = field(default_factory=list)
     keywords: list[str] = field(default_factory=list)
+    required_keywords: list[str] = field(default_factory=list)
+    forbidden_keywords: list[str] = field(default_factory=list)
 
 @dataclass
 class SearchQuery:
