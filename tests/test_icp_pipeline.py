@@ -1,27 +1,16 @@
 from app.database.models import Prospect
-
 from app.enrichment.dto import ProfileData
-
 from app.pipeline.icp_pipeline import ICPQualificationPipeline
-
 from app.repositories.qualification_repository import QualificationRepository
-
 from app.qualification.service import QualificationService
-
 from app.qualification.llm.fake_llm import FakeLLM
 from app.qualification.llm.prompts import PromptBuilder
-
 from app.qualification.parsers.json_parser import JsonParser
-
 from app.qualification.validators.result_validator import ResultValidator
-
 from app.qualification.icp.icp_definition import ICPDefinition
-
-from app.qualification.config.icp_loader import ICPLoader
 
 
 def create_pipeline():
-
     service = QualificationService(
         llm=FakeLLM(),
         prompt_builder=PromptBuilder(),
@@ -29,18 +18,13 @@ def create_pipeline():
         validator=ResultValidator(),
     )
 
-    loader = ICPLoader()
-
     return ICPQualificationPipeline(
         qualification_service=service,
         qualification_repository=QualificationRepository(),
-        icp_loader=loader,
-        icp_name="business_coach",
     )
 
 
 def test_full_icp_pipeline_success(db_session):
-
     pipeline = create_pipeline()
 
     prospect = Prospect(
@@ -59,34 +43,31 @@ def test_full_icp_pipeline_success(db_session):
         linkedin_url="https://linkedin.com/in/jean",
         name="Jean Dupont",
         headline="Business Coach indépendant",
-        about=(
-            "J'accompagne les PME "
-            "avec du coaching commercial."
-        ),
-        raw_text=(
-            "Business coach B2B "
-            "créateur de contenu LinkedIn"
-        ),
+        about="J'accompagne les PME avec du coaching commercial.",
+        raw_text="Business coach B2B créateur de contenu LinkedIn",
         clean_text="Business coach PME",
+    )
+
+    icp = ICPDefinition(
+        professions=["Business Coach"],
+        sectors=["Coaching"],
+        target_markets=["France"],
     )
 
     result = pipeline.run(
         db_session,
         prospect,
         profile,
+        icp,
     )
 
     assert result["decision"].status == "QUALIFIED"
-
     assert result["decision"].priority == "HIGH"
-
     assert result["score"] > 100
-
     assert result["qualification"].profession != ""
 
 
 def test_pipeline_excludes_student(db_session):
-
     pipeline = create_pipeline()
 
     prospect = Prospect(
@@ -110,14 +91,19 @@ def test_pipeline_excludes_student(db_session):
         clean_text="",
     )
 
+    icp = ICPDefinition(
+        professions=["Business Coach"],
+        target_markets=["France"],
+        forbidden_keywords=["étudiant", "stage", "student", "internship"],
+    )
+
     result = pipeline.run(
         db_session,
         prospect,
         profile,
+        icp,
     )
 
     assert result["status"] == "EXCLUDED"
-
     assert result["reason"] == "Profil étudiant"
-
     assert result["score"] == 0
