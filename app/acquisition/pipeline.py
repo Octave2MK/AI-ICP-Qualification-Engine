@@ -95,12 +95,15 @@ class AcquisitionPipeline:
                 continue
 
         # 3. Filtrage de pertinence
-
         relevant_results = []
 
         for result in all_results:
             relevance = self.relevance_filter.evaluate(
-                result,
+                ProspectCandidate(
+                    url=result.url,
+                    title=result.title,
+                    snippet=result.snippet,
+                ),
                 icp,
             )
 
@@ -119,7 +122,7 @@ class AcquisitionPipeline:
             self.url_extractor.extract(relevant_results)
         )
 
-        # 4. Normalisation
+        # 5. Normalisation
         normalized_urls = []
 
         for url in urls:
@@ -130,7 +133,7 @@ class AcquisitionPipeline:
             for url in normalized_urls[:5]:
                 print(url)
 
-        # 5. Déduplication
+        # 6. Déduplication
         clean_urls = (
             self.deduplicator.deduplicate(
                 normalized_urls
