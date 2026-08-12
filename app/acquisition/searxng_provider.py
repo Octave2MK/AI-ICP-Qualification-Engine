@@ -14,9 +14,7 @@ from app.acquisition.cache.search_cache import SearchCache
 
 
 class SearXNGProvider(SearchProvider):
-    logger = get_logger(
-        "SearXNGProvider"
-    )
+    logger = get_logger("SearXNGProvider")
 
     def __init__(self):
         self.rate_limiter = RateLimiter(
@@ -28,54 +26,51 @@ class SearXNGProvider(SearchProvider):
         self,
         query: SearchQuery,
     ) -> list[SearchResult]:
+        # Some callers / serialized queries can contain an escaped colon
+        # ("site\\:"). SearXNG expects the search operator as "site:".
+        normalized_query = self._normalize_query(query.text)
+        cache_key = normalized_query.lower().strip()
 
-        cache_key = query.text.lower().strip()
-
-        cached_results = self.cache.get(
-            cache_key
-        )
-
+        cached_results = self.cache.get(cache_key)
 
         if cached_results is not None:
             self.logger.info(
                 "Cache hit for query: %s",
-                query.text,
+                normalized_query,
             )
             return cached_results
+
         try:
             self.logger.info(
                 "Searching SearXNG: %s",
-                query.text,
+                normalized_query,
             )
 
-            payload = self._request(query)
+            payload = self._request(
+                SearchQuery(text=normalized_query)
+            )
         except httpx.TimeoutException as exc:
-
             self.logger.error(
                 "SearXNG timeout for query: %s",
-                query.text,
+                normalized_query,
             )
-            raise SearXNGError(
-                "SearXNG timeout"
-            ) from exc
-
+            raise SearXNGError("SearXNG timeout") from exc
 
         except httpx.HTTPError as exc:
             self.logger.error(
                 "SearXNG HTTP error for query: %s",
-                query.text,
+                normalized_query,
             )
-            raise SearXNGError(
-                "SearXNG HTTP error"
-            ) from exc
+            raise SearXNGError("SearXNG HTTP error") from exc
 
         results = [
             SearchResult(
-                title=result["title"],
-                url=result["url"],
+                title=result.get("title", ""),
+                url=result.get("url", ""),
                 snippet=result.get("content", ""),
             )
             for result in payload.get("results", [])
+            if result.get("url")
         ]
 
         self.logger.info(
@@ -83,11 +78,13 @@ class SearXNGProvider(SearchProvider):
             len(results),
         )
 
-        self.cache.set(
-            cache_key,
-            results,
-        )
+        self.cache.set(cache_key, results)
         return results
+
+    @staticmethod
+    def _normalize_query(query: str) -> str:
+        """Normalize escaped SearXNG operators before sending the query."""
+        return query.replace(r"site\:", "site:").strip()
 
     @retry(
         attempts=settings.SEARCH_RETRY_ATTEMPTS,
@@ -98,7 +95,6 @@ class SearXNGProvider(SearchProvider):
         self,
         query: SearchQuery,
     ) -> dict:
-
         self.rate_limiter.wait()
 
         response = httpx.get(
