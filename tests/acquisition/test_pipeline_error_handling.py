@@ -6,6 +6,7 @@ from app.acquisition.acquisition_models import (
 
 from app.acquisition.query_generator import QueryGenerator
 from app.acquisition.url_extractor import URLExtractor
+from app.acquisition.relevance_filter import RelevanceFilter
 from app.acquisition.normalizer import URLNormalizer
 from app.acquisition.deduplicator import Deduplicator
 from app.acquisition.prospect_mapper import ProspectMapper
@@ -34,6 +35,8 @@ def test_pipeline_continues_after_search_error():
         search_provider=FailingProvider(),
 
         url_extractor=URLExtractor(),
+
+        relevance_filter=RelevanceFilter(),
 
         normalizer=URLNormalizer(),
 

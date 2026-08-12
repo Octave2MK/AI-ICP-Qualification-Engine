@@ -4,6 +4,7 @@ from app.repositories.prospect_repository import ProspectRepository
 
 from app.acquisition.query_generator import QueryGenerator
 from app.acquisition.url_extractor import URLExtractor
+from app.acquisition.relevance_filter import RelevanceFilter
 from app.acquisition.normalizer import URLNormalizer
 from app.acquisition.deduplicator import Deduplicator
 from app.acquisition.prospect_mapper import ProspectMapper
@@ -60,4 +61,6 @@ def create_acquisition_pipeline():
         deduplicator=Deduplicator(),
 
         prospect_mapper=ProspectMapper(),
+
+        relevance_filter=RelevanceFilter(),
     )

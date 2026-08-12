@@ -32,11 +32,11 @@ class MockSearchProvider(SearchProvider):
             SearchResult(
                 title="John Doe",
                 url="https://www.linkedin.com/in/john-doe",
-                snippet="Business Coach"
+                snippet="Business Coach basé en France, accompagnement des entrepreneurs."
             ),
             SearchResult(
                 title="Jane Smith",
                 url="https://www.linkedin.com/in/jane-smith",
-                snippet="Sales Coach"
+                snippet="Business Coach en France, accompagnement des dirigeants et entrepreneurs."
             ),
         ]

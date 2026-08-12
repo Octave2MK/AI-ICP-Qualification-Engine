@@ -118,9 +118,21 @@ class AcquisitionPipeline:
 
         # 4. Extraction des URLs LinkedIn
 
+
+        print("\nRELEVANT RESULTS:", len(relevant_results))
+
+        for result in relevant_results:
+            print("RELEVANT URL:", result.url)
+            print("RELEVANT TITLE:", result.title)
+            print("RELEVANT SNIPPET:", result.snippet)
+
         urls = (
             self.url_extractor.extract(relevant_results)
         )
+
+        print("\nEXTRACTED URLS:", len(urls))
+        for url in urls:
+            print("EXTRACTED:", url)
 
         # 5. Normalisation
         normalized_urls = []

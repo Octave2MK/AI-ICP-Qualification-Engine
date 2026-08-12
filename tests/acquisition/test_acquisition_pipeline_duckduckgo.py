@@ -2,6 +2,7 @@ from app.acquisition.pipeline import AcquisitionPipeline
 from app.acquisition.query_generator import QueryGenerator
 from app.acquisition.duckduckgo_provider import DuckDuckGoProvider
 from app.acquisition.url_extractor import URLExtractor
+from app.acquisition.relevance_filter import RelevanceFilter
 from app.acquisition.normalizer import URLNormalizer
 from app.acquisition.deduplicator import Deduplicator
 from app.acquisition.prospect_mapper import ProspectMapper
@@ -15,6 +16,7 @@ def test_pipeline_duckduckgo():
         query_generator=QueryGenerator(),
         search_provider=DuckDuckGoProvider(),
         url_extractor=URLExtractor(),
+        relevance_filter=RelevanceFilter(),
         normalizer=URLNormalizer(),
         deduplicator=Deduplicator(),
         prospect_mapper=ProspectMapper(),

@@ -8,6 +8,8 @@ from app.acquisition.search_provider import MockSearchProvider
 
 from app.acquisition.url_extractor import URLExtractor
 
+from app.acquisition.relevance_filter import RelevanceFilter
+
 from app.acquisition.normalizer import URLNormalizer
 
 from app.acquisition.deduplicator import Deduplicator
@@ -25,6 +27,8 @@ def test_full_acquisition_pipeline():
         search_provider=MockSearchProvider(),
 
         url_extractor=URLExtractor(),
+
+        relevance_filter=RelevanceFilter(),
 
         normalizer=URLNormalizer(),
 
