@@ -12,6 +12,15 @@ from app.acquisition.url_extractor import URLExtractor
 from app.acquisition.normalizer import URLNormalizer
 
 
+class FakeQueryGenerator:
+    def generate(self, icp):
+        return [
+            SearchQuery(
+                text='site:linkedin.com/in "Business Coach" "France"'
+            )
+        ]
+
+
 class FakeSearchProvider:
     def search(self, query: SearchQuery):
         return [
@@ -25,7 +34,7 @@ class FakeSearchProvider:
 
 def build_pipeline():
     return AcquisitionPipeline(
-        query_generator=lambda: None,
+        query_generator=FakeQueryGenerator(),
         search_provider=FakeSearchProvider(),
         url_extractor=URLExtractor(),
         relevance_filter=RelevanceFilter(),
@@ -35,43 +44,28 @@ def build_pipeline():
     )
 
 
-def test_acquisition_pipeline_preserves_prospect_candidate_contract():
-    pipeline = build_pipeline()
-
-    # Replace query generation with a deterministic provider-independent stub.
-    class FakeQueryGenerator:
-        def generate(self, icp):
-            return [SearchQuery(text='site:linkedin.com/in "Business Coach" "France"')]
-
-    pipeline.query_generator = FakeQueryGenerator()
-
-    icp = ICP(
+def build_icp():
+    return ICP(
         job_titles=["Business Coach"],
         countries=["France"],
     )
 
-    candidates = pipeline.run(icp)
+
+def test_acquisition_pipeline_preserves_prospect_candidate_contract():
+    pipeline = build_pipeline()
+
+    candidates = pipeline.run(build_icp())
 
     assert len(candidates) == 1
     assert isinstance(candidates[0], ProspectCandidate)
     assert candidates[0].url == "linkedin.com/in/benveniste-pascal"
+    assert candidates[0].title == "Pascal BENVENISTE - Business Coach"
 
 
 def test_acquisition_pipeline_maps_candidates_to_prospects():
     pipeline = build_pipeline()
 
-    class FakeQueryGenerator:
-        def generate(self, icp):
-            return [SearchQuery(text='site:linkedin.com/in "Business Coach" "France"')]
-
-    pipeline.query_generator = FakeQueryGenerator()
-
-    icp = ICP(
-        job_titles=["Business Coach"],
-        countries=["France"],
-    )
-
-    prospects = pipeline.run_and_map(icp)
+    prospects = pipeline.run_and_map(build_icp())
 
     assert len(prospects) == 1
     assert prospects[0].linkedin_url == "linkedin.com/in/benveniste-pascal"
