@@ -69,9 +69,6 @@ class AcquisitionPipeline:
                 continue
 
         # 3. Restriction à la source cible avant le scoring.
-        #    Le moteur de recherche peut retourner des résultats hors domaine
-        #    malgré l'opérateur site:. Ils ne doivent jamais entrer dans le
-        #    score ICP.
         linkedin_results = [
             result
             for result in all_results
@@ -106,7 +103,7 @@ class AcquisitionPipeline:
             len(linkedin_results),
         )
 
-        # 5. Extraction des URLs LinkedIn
+        # 5. Extraction des candidats LinkedIn
         candidates = self.url_extractor.extract(relevant_results)
 
         self.logger.info(
@@ -114,23 +111,28 @@ class AcquisitionPipeline:
             len(candidates),
         )
 
-        # 6. Normalisation
-        normalized_urls = [
-            self.normalizer.normalize(candidate.url)
+        # 6. Normalisation : le contrat reste ProspectCandidate.
+        normalized_candidates = [
+            self.normalizer.normalize(candidate)
             for candidate in candidates
         ]
 
-        # 7. Déduplication
-        clean_urls = self.deduplicator.deduplicate(
-            normalized_urls
+        self.logger.info(
+            "Normalized LinkedIn profiles: %s",
+            len(normalized_candidates),
+        )
+
+        # 7. Déduplication : le contrat reste ProspectCandidate.
+        deduplicated_candidates = self.deduplicator.deduplicate(
+            normalized_candidates
         )
 
         self.logger.info(
-            "Deduplicated LinkedIn URLs: %s",
-            len(clean_urls),
+            "Deduplicated LinkedIn profiles: %s",
+            len(deduplicated_candidates),
         )
 
-        return clean_urls
+        return deduplicated_candidates
 
     @staticmethod
     def _is_linkedin_profile(url: str) -> bool:
@@ -145,12 +147,12 @@ class AcquisitionPipeline:
         )
 
     def run_and_map(self, icp: ICP):
-        urls = self.run(icp)
+        candidates = self.run(icp)
         prospects = []
 
-        for url in urls:
+        for candidate in candidates:
             prospects.append(
-                self.prospect_mapper.map(url)
+                self.prospect_mapper.map(candidate)
             )
 
         return prospects
