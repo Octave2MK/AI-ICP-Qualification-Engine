@@ -9,3 +9,5 @@ class ProfileData:
     about: str
     raw_text: str
     clean_text: str = ""
+    acquisition_title: str = ""
+    acquisition_snippet: str = ""
