@@ -1,11 +1,23 @@
 from app.factory import create_full_workflow
-from app.database.database import SessionLocal
+from app.database.database import (
+    SessionLocal,
+    Base,
+    engine,
+)
+
+# Import des modèles afin que toutes les tables soient enregistrées
+# dans Base.metadata avant create_all().
+import app.database.models  # noqa: F401
 
 
 def run_workflow(
         icp,
         progress_callback=None,
 ):
+    # Garantit qu'une base fraîche possède également la table
+    # qualifications avant le démarrage du workflow.
+    Base.metadata.create_all(bind=engine)
+
     db = SessionLocal()
 
     try:
@@ -17,5 +29,4 @@ def run_workflow(
         )
         return results
     finally:
-
         db.close()
