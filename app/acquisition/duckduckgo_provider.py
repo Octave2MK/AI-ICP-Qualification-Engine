@@ -6,6 +6,10 @@ from app.acquisition.acquisition_models import (
 )
 
 from app.acquisition.search_provider import SearchProvider
+from app.core.logging import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class DuckDuckGoProvider(SearchProvider):
@@ -25,40 +29,31 @@ class DuckDuckGoProvider(SearchProvider):
                     )
                 )
 
-                print(
-                    "RAW DDG COUNT:",
-                    len(raw_results)
+                logger.debug(
+                    "DuckDuckGo returned %d raw results for query: %s",
+                    len(raw_results),
+                    query.text,
                 )
 
                 for item in raw_results:
-                    print(
-                        "ITEM:",
-                        item
-                    )
                     results.append(
                         SearchResult(
-                            title=item.get(
-                                "title",
-                                ""
-                            ),
-                            url=item.get(
-                                "href",
-                                ""
-                            ),
-                            snippet=item.get(
-                                "body",
-                                ""
-                            ),
+                            title=item.get("title", ""),
+                            url=item.get("href", ""),
+                            snippet=item.get("body", ""),
                         )
                     )
-        except Exception as exc:
-            print(
-                "DDG ERROR:",
-                exc
+
+        except Exception:
+            logger.exception(
+                "DuckDuckGo search failed for query: %s",
+                query.text,
             )
 
-        print(
-            "SEARCHRESULT COUNT:",
-            len(results)
+        logger.debug(
+            "DuckDuckGo produced %d SearchResult objects for query: %s",
+            len(results),
+            query.text,
         )
+
         return results
