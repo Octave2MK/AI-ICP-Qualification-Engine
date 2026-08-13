@@ -25,12 +25,18 @@ class ICPPreFilter:
         profile,
         icp: ICPDefinition,
     ) -> bool:
+        # Les données issues de LinkedIn peuvent être incomplètes pendant
+        # l'enrichissement. Les signaux d'acquisition (titre et snippet)
+        # constituent donc une source de contexte fiable supplémentaire.
         text = " ".join(
             [
                 profile.name or "",
                 profile.headline or "",
                 profile.about or "",
+                profile.raw_text or "",
                 profile.clean_text or "",
+                getattr(profile, "acquisition_title", "") or "",
+                getattr(profile, "acquisition_snippet", "") or "",
             ]
         ).lower()
 
