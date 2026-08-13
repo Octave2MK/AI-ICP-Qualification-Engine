@@ -51,7 +51,9 @@ class ICPPreFilter:
             for profession in professions
         )
 
-        required_match = all(
+        # Required keywords are alternatives: at least one relevant keyword
+        # must be present, rather than every keyword simultaneously.
+        required_match = any(
             cls._contains_term(text, keyword)
             for keyword in required_keywords
         )
