@@ -52,8 +52,16 @@ class FullICPWorkflow:
                 # (notamment sur LinkedIn). On conserve donc les signaux
                 # fiables obtenus lors de l'acquisition afin que le pré-filtre
                 # et le LLM puissent toujours exploiter le résultat de recherche.
-                profile.acquisition_title = prospect.fullname or ""
-                profile.acquisition_snippet = prospect.job_title or ""
+                profile.acquisition_title = getattr(
+                    prospect,
+                    "fullname",
+                    getattr(profile, "name", "") or "",
+                ) or ""
+                profile.acquisition_snippet = getattr(
+                    prospect,
+                    "job_title",
+                    getattr(profile, "headline", "") or "",
+                ) or ""
 
                 qualification = self.qualification_pipeline.run(
                     db,
