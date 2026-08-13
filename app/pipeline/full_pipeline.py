@@ -48,6 +48,13 @@ class FullICPWorkflow:
                     prospect.linkedin_url
                 )
 
+                # L'enrichissement distant peut être incomplet ou bloqué
+                # (notamment sur LinkedIn). On conserve donc les signaux
+                # fiables obtenus lors de l'acquisition afin que le pré-filtre
+                # et le LLM puissent toujours exploiter le résultat de recherche.
+                profile.acquisition_title = prospect.fullname or ""
+                profile.acquisition_snippet = prospect.job_title or ""
+
                 qualification = self.qualification_pipeline.run(
                     db,
                     prospect,
