@@ -1,8 +1,10 @@
+import pytest
+
 from app.qualification.llm.factory import LLMFactory
 from app.qualification.llm.fake_llm import FakeLLM
 from app.qualification.llm.gemini_client import GeminiClient
 
-
+@pytest.mark.integration
 def test_create_fake_llm():
     llm = LLMFactory.create(provider="fake")
 
