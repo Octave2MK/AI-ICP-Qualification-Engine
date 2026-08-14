@@ -39,19 +39,22 @@ class FullICPWorkflow:
             try:
                 profile = self.osint_enricher.enrich(prospect.linkedin_url)
 
-                # L'enrichissement distant peut être incomplet ou bloqué
-                # (notamment sur LinkedIn). On conserve les signaux fiables
-                # obtenus lors de l'acquisition.
-                profile.acquisition_title = getattr(
-                    prospect,
-                    "fullname",
-                    getattr(profile, "name", "") or "",
-                ) or ""
-                profile.acquisition_snippet = getattr(
-                    prospect,
-                    "job_title",
-                    getattr(profile, "headline", "") or "",
-                ) or ""
+                # LinkedIn enrichment can be incomplete. Acquisition already
+                # contains reliable search-result identity/job-title signals;
+                # expose them through the normal profile fields so the
+                # qualification prompt can use them without requiring a
+                # separate enrichment-specific path.
+                acquired_name = getattr(prospect, "fullname", "") or ""
+                acquired_job_title = getattr(prospect, "job_title", "") or ""
+
+                profile.name = profile.name or acquired_name
+                profile.headline = profile.headline or acquired_job_title
+                profile.acquisition_title = (
+                    acquired_name or getattr(profile, "name", "") or ""
+                )
+                profile.acquisition_snippet = (
+                    acquired_job_title or getattr(profile, "headline", "") or ""
+                )
 
                 batch_items.append((index, prospect, profile))
             except Exception as exc:
