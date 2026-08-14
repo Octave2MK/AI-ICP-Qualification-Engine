@@ -5,8 +5,14 @@ from app.qualification.decision.dto import ICPDecision
 class DecisionEngine:
     @staticmethod
     def decide(
-        result: QualificationResult
+        result: QualificationResult,
+        minimum_confidence: float = 0.85,
     ) -> ICPDecision:
+
+        if not 0.0 <= minimum_confidence <= 1.0:
+            raise ValueError(
+                "minimum_confidence must be between 0.0 and 1.0"
+            )
 
         if result.exclusion_reason:
             return ICPDecision(
@@ -22,7 +28,7 @@ class DecisionEngine:
                 priority="LOW",
             )
 
-        if result.confidence >= 0.85:
+        if result.confidence >= minimum_confidence:
             return ICPDecision(
                 status="QUALIFIED",
                 reason="Profil fortement compatible ICP",
