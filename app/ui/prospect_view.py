@@ -11,7 +11,23 @@ def _decision_status(workflow_result):
     if isinstance(decision, str):
         return decision
 
-    return getattr(decision, "status", None)
+    decision_status = getattr(decision, "status", None)
+    if decision_status:
+        return decision_status
+
+    qualification = workflow_result.get("qualification")
+    if isinstance(qualification, dict):
+        status = qualification.get("status")
+        if status:
+            return status
+
+        nested_decision = qualification.get("decision")
+        if isinstance(nested_decision, str):
+            return nested_decision
+
+        return getattr(nested_decision, "status", None)
+
+    return None
 
 
 def summarize_results(results):
@@ -25,8 +41,7 @@ def summarize_results(results):
             errors += 1
             continue
 
-        workflow_result = item.get("qualification") or {}
-        status = _decision_status(workflow_result)
+        status = _decision_status(item)
 
         if status == "QUALIFIED":
             successful += 1
