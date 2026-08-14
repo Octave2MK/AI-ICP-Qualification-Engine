@@ -26,6 +26,14 @@ class ProspectMapper:
 
         job = title.split(" - ", 1)[1].strip()
         job = job.replace("| LinkedIn", "").strip()
+
+        # Les résultats LinkedIn peuvent utiliser " - LinkedIn" comme
+        # suffixe final. Il faut le retirer sans supprimer les tirets
+        # légitimes présents dans l'intitulé du métier.
+        if job.endswith(" - LinkedIn"):
+            job = job[: -len(" - LinkedIn")].strip()
+
+        # Un titre peut également contenir "| LinkedIn" après le métier.
         job = job.split("|", 1)[0].strip()
 
         return job or None
