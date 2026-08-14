@@ -1,4 +1,4 @@
-from app.database.models import Prospect
+from app.database.models import Prospect, Qualification
 from app.enrichment.dto import ProfileData
 from app.pipeline.icp_pipeline import ICPQualificationPipeline
 from app.repositories.qualification_repository import QualificationRepository
@@ -107,3 +107,90 @@ def test_pipeline_excludes_student(db_session):
     assert result["status"] == "EXCLUDED"
     assert result["reason"] == "Profil étudiant"
     assert result["score"] == 0
+
+
+def test_qualification_cache_is_isolated_by_icp(db_session):
+    pipeline = create_pipeline()
+
+    prospect = Prospect(
+        fullname="Jean Dupont",
+        linkedin_url="https://linkedin.com/in/multi-icp",
+        country="France",
+        job_title="Business Coach",
+        followers=5000,
+    )
+
+    db_session.add(prospect)
+    db_session.commit()
+    db_session.refresh(prospect)
+
+    profile = ProfileData(
+        linkedin_url="https://linkedin.com/in/multi-icp",
+        name="Jean Dupont",
+        headline="Business Coach indépendant",
+        about="J'accompagne les PME avec du coaching commercial.",
+        raw_text="Business coach B2B créateur de contenu LinkedIn",
+        clean_text="Business coach PME",
+    )
+
+    france_icp = ICPDefinition(
+        professions=["Business Coach"],
+        sectors=["Coaching"],
+        target_markets=["France"],
+    )
+
+    belgium_icp = ICPDefinition(
+        professions=["Business Coach"],
+        sectors=["Coaching"],
+        target_markets=["Belgique"],
+    )
+
+    first = pipeline.run(
+        db_session,
+        prospect,
+        profile,
+        france_icp,
+    )
+
+    second = pipeline.run(
+        db_session,
+        prospect,
+        profile,
+        belgium_icp,
+    )
+
+    assert first["cached"] is False
+    assert second["cached"] is False
+    assert db_session.query(Qualification).count() == 2
+
+    repeated = pipeline.run(
+        db_session,
+        prospect,
+        profile,
+        france_icp,
+    )
+
+    assert repeated["cached"] is True
+    assert db_session.query(Qualification).count() == 2
+
+
+def test_icp_fingerprint_is_deterministic():
+    first = ICPDefinition(
+        professions=["Business Coach", "Consultant"],
+        sectors=["Coaching"],
+        target_markets=["France", "Belgique"],
+        required_keywords=["B2B", "dirigeant"],
+        forbidden_keywords=["étudiant"],
+        minimum_confidence=0.8,
+    )
+
+    same_data_different_order = ICPDefinition(
+        professions=["Consultant", "Business Coach"],
+        sectors=["Coaching"],
+        target_markets=["Belgique", "France"],
+        required_keywords=["dirigeant", "B2B"],
+        forbidden_keywords=["étudiant"],
+        minimum_confidence=0.8,
+    )
+
+    assert first.fingerprint() == same_data_different_order.fingerprint()
