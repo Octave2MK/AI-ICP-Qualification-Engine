@@ -1,8 +1,21 @@
 import pandas as pd
 
 
+def _decision_status(workflow_result):
+    """Return the normalized decision/status of one workflow result."""
+    status = workflow_result.get("status")
+    if status:
+        return status
+
+    decision = workflow_result.get("decision")
+    if isinstance(decision, str):
+        return decision
+
+    return getattr(decision, "status", None)
+
+
 def summarize_results(results):
-    """Return workflow outcome counts for the Streamlit summary."""
+    """Return accurate workflow outcome counts for the Streamlit summary."""
     errors = 0
     filtered = 0
     successful = 0
@@ -13,12 +26,14 @@ def summarize_results(results):
             continue
 
         workflow_result = item.get("qualification") or {}
-        status = workflow_result.get("status")
+        status = _decision_status(workflow_result)
 
-        if status in {"FILTERED", "EXCLUDED"}:
-            filtered += 1
-        else:
+        if status == "QUALIFIED":
             successful += 1
+        else:
+            # EXCLUDED/FILTERED happen before Gemini; REJECTED/REVIEW can
+            # happen after Gemini. All are non-successful outcomes.
+            filtered += 1
 
     return {
         "successful": successful,
@@ -28,69 +43,21 @@ def summarize_results(results):
 
 
 def results_to_dataframe(results):
+    """Build the intentionally compact prospect result table."""
     rows = []
+
     for item in results:
-        prospect = item.get(
-            "prospect"
-        )
-        if "error" in item:
-            rows.append(
-                {
-                    "Nom": prospect.fullname,
-                    "LinkedIn": prospect.linkedin_url,
-                    "Erreur": item["error"],
-                }
-            )
-            continue
-
-        workflow_result = item.get(
-            "qualification",
-            {}
-        )
-
-        qualification = workflow_result.get(
-            "qualification"
-        )
-
+        prospect = item.get("prospect")
         rows.append(
             {
-                "Nom": prospect.fullname,
-                "LinkedIn": prospect.linkedin_url,
-                "Métier": prospect.job_title,
-                "Score ICP": workflow_result.get(
-                    "score",
-                    0
-                ),
-
-                "ICP Match": (
-                    qualification.icp_match
-                    if qualification
-                    else False
-                ),
-
-                "Confiance": (
-                    qualification.confidence
-                    if qualification
-                    else 0
-                ),
-
-                "Offre B2B": (
-                    qualification.offer_detected
-                    if qualification
-                    else False
-                ),
-
-                "Secteur": (
-                    qualification.sector
-                    if qualification
-                    else ""
-                ),
-
-                "Profession": (
-                    qualification.profession
-                    if qualification
-                    else ""
-                ),
+                "Nom": getattr(prospect, "fullname", ""),
+                "LinkedIn": getattr(prospect, "linkedin_url", ""),
+                "Erreur": item.get("error", ""),
+                "Métier": getattr(prospect, "job_title", ""),
             }
         )
-    return pd.DataFrame(rows)
+
+    return pd.DataFrame(
+        rows,
+        columns=["Nom", "LinkedIn", "Erreur", "Métier"],
+    )
