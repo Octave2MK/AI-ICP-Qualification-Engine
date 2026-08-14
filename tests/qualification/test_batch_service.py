@@ -36,22 +36,20 @@ class BatchFakeLLM:
         ]
 
 
-class TestableQualificationService(QualificationService):
-    pass
-
-
 def make_profile(name):
     return ProfileData(
+        linkedin_url=f"https://linkedin.com/in/{name.lower()}",
         name=name,
         headline="Business Coach",
         about="B2B coaching",
+        raw_text="Business Coach B2B",
         clean_text="Business Coach B2B",
     )
 
 
 def test_qualify_batch_uses_one_llm_batch_call():
     llm = BatchFakeLLM()
-    service = TestableQualificationService(
+    service = QualificationService(
         llm=llm,
         prompt_builder=PromptBuilder(),
         parser=JsonParser(),
