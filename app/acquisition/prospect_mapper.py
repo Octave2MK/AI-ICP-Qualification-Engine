@@ -4,37 +4,38 @@ from app.database.models import Prospect
 
 class ProspectMapper:
     """
-    Transforme une URL OSINT en Prospect SQLAlchemy.
+    Transforme un résultat de recherche OSINT en Prospect SQLAlchemy.
+
+    Les résultats de moteurs de recherche utilisent généralement un titre
+    du type : "Nom - Métier | LinkedIn". Le mapper sépare explicitement
+    le nom et le métier au lieu de stocker le titre/snippet brut.
     """
+
     def _extract_name(self, title: str) -> str:
         if not title:
             return "Unknown"
 
-        name = title.split("-")[0].strip()
-
+        name = title.split(" - ", 1)[0].strip()
         name = name.replace("| LinkedIn", "").strip()
 
         return name or "Unknown"
 
-
     def _extract_job_title(self, title: str) -> str | None:
-        if "-" not in title:
+        if not title or " - " not in title:
             return None
 
-        job = title.split("-", 1)[1]
+        job = title.split(" - ", 1)[1].strip()
+        job = job.replace("| LinkedIn", "").strip()
+        job = job.split("|", 1)[0].strip()
 
-        job = job.split("|")[0]
-
-        return job.strip() or None
-
+        return job or None
 
     def map(
         self,
-        candidate
-    ):
-
+        candidate: ProspectCandidate,
+    ) -> Prospect:
         return Prospect(
             linkedin_url=candidate.url,
-            fullname=candidate.title or "Unknown",
-            job_title=candidate.snippet or "",
+            fullname=self._extract_name(candidate.title),
+            job_title=self._extract_job_title(candidate.title) or "",
         )
