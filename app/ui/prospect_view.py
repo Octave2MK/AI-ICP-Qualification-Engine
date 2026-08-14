@@ -1,6 +1,32 @@
 import pandas as pd
 
 
+def summarize_results(results):
+    """Return workflow outcome counts for the Streamlit summary."""
+    errors = 0
+    filtered = 0
+    successful = 0
+
+    for item in results:
+        if "error" in item:
+            errors += 1
+            continue
+
+        workflow_result = item.get("qualification") or {}
+        status = workflow_result.get("status")
+
+        if status in {"FILTERED", "EXCLUDED"}:
+            filtered += 1
+        else:
+            successful += 1
+
+    return {
+        "successful": successful,
+        "errors": errors,
+        "filtered": filtered,
+    }
+
+
 def results_to_dataframe(results):
     rows = []
     for item in results:
