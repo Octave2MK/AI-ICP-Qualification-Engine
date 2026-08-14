@@ -11,6 +11,8 @@ class PromptBuilder:
 
         icp_section = self._build_icp_section(icp)
 
+        acquisition_section = self._build_acquisition_section(profile)
+
         return f"""
 You are an expert B2B ICP qualification engine.
 
@@ -34,12 +36,19 @@ About:
 Profile text:
 {profile.clean_text}
 
+{acquisition_section}
+
 
 RULES
 
-- Use only information present in the profile.
+- Use only information present in the profile or acquisition context.
 - Do not invent facts.
 - Do not make assumptions.
+- The "profession" field is mandatory. When the LinkedIn enrichment is
+  incomplete, use the clearest profession/job title explicitly present in the
+  acquisition context (for example the search-result title or snippet).
+- The "sector" field is also mandatory. Fill it only when the profile provides
+  enough explicit evidence; otherwise use "Unknown" rather than inventing it.
 - Return JSON only.
 
 
@@ -58,6 +67,24 @@ EXPECTED JSON FORMAT
     "evidence": [],
     "exclusion_reason": null
 }}
+"""
+
+    @staticmethod
+    def _build_acquisition_section(profile: ProfileData) -> str:
+        title = getattr(profile, "acquisition_title", "") or ""
+        snippet = getattr(profile, "acquisition_snippet", "") or ""
+
+        if not title and not snippet:
+            return ""
+
+        return f"""
+ACQUISITION CONTEXT
+
+Search-result title:
+{title}
+
+Search-result snippet:
+{snippet}
 """
 
     @staticmethod
