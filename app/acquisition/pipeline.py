@@ -132,6 +132,15 @@ class AcquisitionPipeline:
             len(deduplicated_candidates),
         )
 
+        # 8. Respecter la cible demandée par l'utilisateur après toutes les
+        # étapes de qualité. Une recherche peut naturellement retourner moins
+        # de profils que demandé : on ne fabrique jamais de prospects.
+        max_prospects = getattr(icp, "max_prospects", None)
+        if max_prospects is not None:
+            if not isinstance(max_prospects, int) or max_prospects < 1:
+                raise ValueError("max_prospects must be a positive integer")
+            deduplicated_candidates = deduplicated_candidates[:max_prospects]
+
         return deduplicated_candidates
 
     @staticmethod
