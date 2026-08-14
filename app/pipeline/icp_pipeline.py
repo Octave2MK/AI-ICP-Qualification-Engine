@@ -16,16 +16,61 @@ class ICPQualificationPipeline:
         self._qualification_service = qualification_service
         self._qualification_repository = qualification_repository
 
-    def run(
+    def run(self, db, prospect, profile: ProfileData, icp: ICPDefinition):
+        prepared = self._prepare(db, prospect, profile, icp)
+        if prepared is not None:
+            return prepared
+
+        qualification = self._qualification_service.qualify(profile, icp)
+        return self._finalize(db, prospect, qualification, icp, cached=False)
+
+    def run_batch(
         self,
         db,
-        prospect,
-        profile: ProfileData,
+        items: list[tuple[object, ProfileData]],
         icp: ICPDefinition,
-    ):
-        # 1 - Vérification exclusion
-        exclusion = ExclusionEngine.check(profile)
+    ) -> list[dict]:
+        """Qualify all pending profiles through one LLM batch call."""
+        if not items:
+            return []
 
+        results: list[dict | None] = [None] * len(items)
+        pending: list[tuple[int, object, ProfileData]] = []
+
+        for index, (prospect, profile) in enumerate(items):
+            prepared = self._prepare(db, prospect, profile, icp)
+            if prepared is None:
+                pending.append((index, prospect, profile))
+            else:
+                results[index] = prepared
+
+        if pending:
+            qualifications = self._qualification_service.qualify_batch(
+                [profile for _, _, profile in pending],
+                icp,
+            )
+
+            if len(qualifications) != len(pending):
+                raise ValueError(
+                    "Batch qualification count does not match pending profiles."
+                )
+
+            for (index, prospect, _profile), qualification in zip(
+                pending,
+                qualifications,
+            ):
+                results[index] = self._finalize(
+                    db,
+                    prospect,
+                    qualification,
+                    icp,
+                    cached=False,
+                )
+
+        return [result for result in results if result is not None]
+
+    def _prepare(self, db, prospect, profile, icp):
+        exclusion = ExclusionEngine.check(profile)
         if exclusion["excluded"]:
             return {
                 "status": "EXCLUDED",
@@ -33,7 +78,6 @@ class ICPQualificationPipeline:
                 "score": 0,
             }
 
-        # 2 - Pré-filtrage avant Gemini
         if not ICPPreFilter.match(profile, icp):
             return {
                 "status": "FILTERED",
@@ -42,55 +86,29 @@ class ICPQualificationPipeline:
                 "reason": "Profil non pertinent pour ICP",
             }
 
-        # 3 - Cache strictement lié à l'ICP courant.
-        # Un même prospect peut être qualifié pour plusieurs ICP différents.
-        icp_fingerprint = icp.fingerprint()
         cached = self._qualification_repository.get_by_prospect_and_icp(
             db,
             prospect.id,
-            icp_fingerprint,
+            icp.fingerprint(),
         )
-
         if cached:
-            decision = DecisionEngine.decide(
-                cached,
-                minimum_confidence=icp.minimum_confidence,
+            return self._finalize(db, prospect, cached, icp, cached=True)
+
+        return None
+
+    def _finalize(self, db, prospect, qualification, icp, cached: bool):
+        if not cached:
+            self._qualification_repository.save(
+                db,
+                prospect.id,
+                qualification,
+                icp.fingerprint(),
             )
 
-            score, details = HybridScoringEngine.calculate_score(
-                prospect,
-                cached,
-            )
-
-            return {
-                "decision": decision,
-                "qualification": cached,
-                "score": score,
-                "details": details,
-                "cached": True,
-            }
-
-        # 4 - Qualification IA selon l'ICP dynamique
-        qualification = self._qualification_service.qualify(
-            profile,
-            icp,
-        )
-
-        # 5 - Persistance avec l'identifiant de l'ICP courant
-        self._qualification_repository.save(
-            db,
-            prospect.id,
-            qualification,
-            icp_fingerprint,
-        )
-
-        # 6 - Décision selon le seuil de confiance de l'ICP courant
         decision = DecisionEngine.decide(
             qualification,
             minimum_confidence=icp.minimum_confidence,
         )
-
-        # 7 - Score hybride
         score, details = HybridScoringEngine.calculate_score(
             prospect,
             qualification,
@@ -101,5 +119,5 @@ class ICPQualificationPipeline:
             "qualification": qualification,
             "score": score,
             "details": details,
-            "cached": False,
+            "cached": cached,
         }
