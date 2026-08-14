@@ -62,10 +62,13 @@ class QualificationRepository:
         db: Session,
         prospect_id: int,
         result: QualificationResult,
+        icp_fingerprint: str | None = None,
     ) -> Qualification:
 
         qualification = Qualification(
             prospect_id=prospect_id,
+
+            icp_fingerprint=icp_fingerprint,
 
             profession=result.profession,
 
@@ -111,7 +114,7 @@ class QualificationRepository:
         db: Session,
         prospect_id: int,
     ) -> QualificationResult | None:
-        
+        """Legacy lookup kept for callers that do not use ICP-aware caching."""
         qualification = (
             db.query(Qualification)
             .filter(
@@ -122,6 +125,29 @@ class QualificationRepository:
 
         if qualification is None:
             return None
+        return self.to_dto(
+            qualification
+        )
+
+    def get_by_prospect_and_icp(
+        self,
+        db: Session,
+        prospect_id: int,
+        icp_fingerprint: str,
+    ) -> QualificationResult | None:
+        """Return only the cached qualification for this exact ICP."""
+        qualification = (
+            db.query(Qualification)
+            .filter(
+                Qualification.prospect_id == prospect_id,
+                Qualification.icp_fingerprint == icp_fingerprint,
+            )
+            .first()
+        )
+
+        if qualification is None:
+            return None
+
         return self.to_dto(
             qualification
         )
