@@ -14,44 +14,34 @@ class FullICPWorkflow:
         self.osint_enricher = osint_enricher
         self.qualification_pipeline = qualification_pipeline
 
-    def run(
-        self,
-        db,
-        icp,
-        progress_callback=None,
-    ):
+    def run(self, db, icp, progress_callback=None):
         if progress_callback:
             progress_callback(5, "Recherche des prospects...")
 
         prospects = self.acquisition_service.acquire(db, icp)
 
         if progress_callback:
-            progress_callback(
-                20,
-                f"{len(prospects)} prospects trouvés",
-            )
+            progress_callback(20, f"{len(prospects)} prospects trouvés")
 
-        results = []
         total = len(prospects)
         qualification_icp = ICPMapper.to_definition(icp)
+        results = [None] * total
+        batch_items = []
 
-        for index, prospect in enumerate(prospects, start=1):
+        for index, prospect in enumerate(prospects):
             if progress_callback:
-                percent = 20 + int((index / total) * 75) if total else 95
+                percent = 20 + int(((index + 1) / total) * 35) if total else 55
                 progress_callback(
                     percent,
-                    f"Traitement du prospect {index}/{total}",
+                    f"Enrichissement du prospect {index + 1}/{total}",
                 )
 
             try:
-                profile = self.osint_enricher.enrich(
-                    prospect.linkedin_url
-                )
+                profile = self.osint_enricher.enrich(prospect.linkedin_url)
 
                 # L'enrichissement distant peut être incomplet ou bloqué
-                # (notamment sur LinkedIn). On conserve donc les signaux
-                # fiables obtenus lors de l'acquisition afin que le pré-filtre
-                # et le LLM puissent toujours exploiter le résultat de recherche.
+                # (notamment sur LinkedIn). On conserve les signaux fiables
+                # obtenus lors de l'acquisition.
                 profile.acquisition_title = getattr(
                     prospect,
                     "fullname",
@@ -63,29 +53,65 @@ class FullICPWorkflow:
                     getattr(profile, "headline", "") or "",
                 ) or ""
 
-                qualification = self.qualification_pipeline.run(
+                batch_items.append((index, prospect, profile))
+            except Exception as exc:
+                results[index] = {
+                    "prospect": prospect,
+                    "error": str(exc),
+                }
+
+        # New production path: enrich first, then qualify all pending profiles
+        # in one LLM batch. Keep the old per-profile path as a compatibility
+        # fallback for lightweight/fake pipeline implementations used by tests.
+        if hasattr(self.qualification_pipeline, "run_batch") and batch_items:
+            try:
+                qualified = self.qualification_pipeline.run_batch(
                     db,
-                    prospect,
-                    profile,
+                    [(prospect, profile) for _, prospect, profile in batch_items],
                     qualification_icp,
                 )
 
-                results.append(
-                    {
+                for (index, prospect, profile), qualification in zip(
+                    batch_items,
+                    qualified,
+                ):
+                    results[index] = {
                         "prospect": prospect,
                         "profile": profile,
                         "qualification": qualification,
                     }
-                )
             except Exception as exc:
-                results.append(
-                    {
+                # Preserve per-prospect output shape even when the whole batch
+                # fails (for example because Gemini quota is exhausted).
+                for index, prospect, profile in batch_items:
+                    results[index] = {
                         "prospect": prospect,
+                        "profile": profile,
                         "error": str(exc),
                     }
-                )
+        else:
+            for index, prospect, profile in batch_items:
+                try:
+                    qualification = self.qualification_pipeline.run(
+                        db,
+                        prospect,
+                        profile,
+                        qualification_icp,
+                    )
+                    results[index] = {
+                        "prospect": prospect,
+                        "profile": profile,
+                        "qualification": qualification,
+                    }
+                except Exception as exc:
+                    results[index] = {
+                        "prospect": prospect,
+                        "profile": profile,
+                        "error": str(exc),
+                    }
 
         if progress_callback:
+            progress_callback(95, "Qualification terminée")
             progress_callback(100, "Workflow terminé")
 
-        return results
+        return [result for result in results if result is not None]
