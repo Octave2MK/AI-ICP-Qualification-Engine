@@ -56,7 +56,10 @@ class QualificationService:
             for response in responses
         ]
 
-    @staticmethod
-    def _validate_result(result: QualificationResult) -> QualificationResult:
+    def _validate_result(
+        self,
+        result: QualificationResult,
+    ) -> QualificationResult:
         result = QualificationNormalizer.normalize(result)
+        self._validator.validate(result)
         return result
