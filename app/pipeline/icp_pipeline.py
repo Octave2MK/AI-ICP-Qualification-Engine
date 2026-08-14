@@ -47,11 +47,14 @@ class ICPQualificationPipeline:
                 "reason": "Profil non pertinent pour ICP",
             }
 
-        # 3 - Vérification du cache
+        # 3 - Cache strictement lié à l'ICP courant.
+        # Un même prospect peut être qualifié pour plusieurs ICP différents.
+        icp_fingerprint = icp.fingerprint()
         cached = (
-            self._qualification_repository.get_by_prospect_id(
+            self._qualification_repository.get_by_prospect_and_icp(
                 db,
                 prospect.id,
+                icp_fingerprint,
             )
         )
 
@@ -83,11 +86,12 @@ class ICPQualificationPipeline:
             )
         )
 
-        # 5 - Persistance
+        # 5 - Persistance avec l'identifiant de l'ICP courant
         self._qualification_repository.save(
             db,
             prospect.id,
             qualification,
+            icp_fingerprint,
         )
 
         # 6 - Décision
