@@ -26,6 +26,18 @@ def test_query_generator_adds_broader_country_variant():
     assert 'site:linkedin.com/in "Business Coach" France' in texts
 
 
+def test_query_generator_adds_plain_text_variant_without_site_operator():
+    icp = ICP(
+        job_titles=["Business Coach"],
+        countries=["France"],
+    )
+
+    queries = QueryGenerator().generate(icp)
+    texts = [query.text for query in queries]
+
+    assert '"Business Coach" France linkedin' in texts
+
+
 def test_query_generator_uses_only_one_keyword_variant():
     icp = ICP(
         job_titles=["Business Coach"],

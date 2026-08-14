@@ -10,6 +10,15 @@ class QueryGenerator:
     `site:` et les guillemets. Le générateur conserve donc la requête exacte
     historique et ajoute quelques variantes contrôlées afin d'améliorer le
     rappel sans multiplier inutilement les appels réseau.
+
+    Constat terrain (SearXNG, moteurs bing/duckduckgo) : l'opérateur `site:`
+    n'est pas toujours transmis correctement par l'adaptateur SearXNG vers
+    le moteur sous-jacent, ce qui peut faire dériver la recherche vers des
+    résultats génériques hors-sujet. La variante en texte libre (sans
+    `site:`) ne dépend pas de cet opérateur : elle laisse `URLExtractor`
+    filtrer les URLs LinkedIn parmi un ensemble de résultats plus large,
+    plutôt que de compter sur le moteur pour restreindre lui-même la
+    recherche.
     """
 
     BASE_QUERY = "site:linkedin.com/in"
@@ -34,6 +43,15 @@ class QueryGenerator:
                     queries,
                     seen,
                     f'{self.BASE_QUERY} "{title}" {country}',
+                )
+
+                # Variante sans opérateur site: — ne dépend pas de son
+                # support par le moteur sous-jacent. URLExtractor filtrera
+                # les vraies URLs LinkedIn parmi des résultats plus larges.
+                self._add_query(
+                    queries,
+                    seen,
+                    f'"{title}" {country} linkedin',
                 )
 
                 # Une seule variante enrichie pour éviter une explosion du
