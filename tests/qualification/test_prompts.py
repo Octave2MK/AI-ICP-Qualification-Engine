@@ -9,7 +9,7 @@ def test_build_prompt_contains_profile_information():
         headline="Business Coach",
         about="I help companies grow.",
         raw_text="Raw profile",
-        clean_text="Business coach helping SMEs improve sales."
+        clean_text="Business coach helping SMEs improve sales.",
     )
 
     prompt = PromptBuilder().build(profile)
@@ -18,6 +18,26 @@ def test_build_prompt_contains_profile_information():
     assert "Business Coach" in prompt
     assert "Business coach helping SMEs improve sales." in prompt
 
+
+def test_build_prompt_uses_acquisition_context_when_enrichment_is_incomplete():
+    profile = ProfileData(
+        linkedin_url="https://linkedin.com/in/pascal-benveniste",
+        name="Pascal BENVENISTE",
+        headline="",
+        about="",
+        raw_text="",
+        clean_text="",
+        acquisition_title="Pascal BENVENISTE - Business Coach - LinkedIn",
+        acquisition_snippet="Business Coach. Accompagnement des dirigeants vers leur plein potentiel.",
+    )
+
+    prompt = PromptBuilder().build(profile)
+
+    assert "ACQUISITION CONTEXT" in prompt
+    assert "Business Coach. Accompagnement des dirigeants" in prompt
+    assert "The \"profession\" field is mandatory" in prompt
+
+
 def test_prompt_is_not_empty():
     profile = ProfileData(
         linkedin_url="",
@@ -25,7 +45,7 @@ def test_prompt_is_not_empty():
         headline="",
         about="",
         raw_text="",
-        clean_text=""
+        clean_text="",
     )
 
     prompt = PromptBuilder().build(profile)
