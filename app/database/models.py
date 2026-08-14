@@ -36,6 +36,7 @@ class Prospect(Base):
         uselist=False
     )
 
+
 class ScoreDetail(Base):
     __tablename__ = "score_details"
 
@@ -54,6 +55,7 @@ class ScoreDetail(Base):
         back_populates="score_details"
     )
 
+
 class Qualification(Base):
     __tablename__ = "qualifications"
 
@@ -66,6 +68,12 @@ class Qualification(Base):
         Integer,
         ForeignKey("prospects.id"),
         nullable=False
+    )
+
+    icp_fingerprint = Column(
+        String,
+        index=True,
+        nullable=True,
     )
 
     profession = Column(
@@ -110,21 +118,21 @@ class Qualification(Base):
     )
 
     offer_detected = Column(
-    Integer
+        Integer
     )
 
     authority_signals = Column(
-    String
+        String
     )
 
     content_signals = Column(
-    String
+        String
     )
 
     commercial_signals = Column(
-    String
+        String
     )
 
     exclusion_reason = Column(
-    String
+        String
     )
