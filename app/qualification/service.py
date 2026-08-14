@@ -28,15 +28,35 @@ class QualificationService:
         profile: ProfileData,
         icp: ICPDefinition | None = None,
     ) -> QualificationResult:
-        
-        prompt = self._prompt_builder.build(
-            profile,
-            icp,
-        )
-
+        prompt = self._prompt_builder.build(profile, icp)
         response = self._llm.analyze(prompt)
-        result = self._parser.parse(response)
-        result = QualificationNormalizer.normalize(result)
-        self._validator.validate(result)
-        return result
+        return self._validate_result(self._parser.parse(response))
 
+    def qualify_batch(
+        self,
+        profiles: list[ProfileData],
+        icp: ICPDefinition | None = None,
+    ) -> list[QualificationResult]:
+        if not profiles:
+            return []
+
+        prompts = [
+            self._prompt_builder.build(profile, icp)
+            for profile in profiles
+        ]
+        responses = self._llm.analyze_batch(prompts)
+
+        if len(responses) != len(profiles):
+            raise ValueError(
+                "LLM batch response count does not match profile count."
+            )
+
+        return [
+            self._validate_result(self._parser.parse(response))
+            for response in responses
+        ]
+
+    @staticmethod
+    def _validate_result(result: QualificationResult) -> QualificationResult:
+        result = QualificationNormalizer.normalize(result)
+        return result
