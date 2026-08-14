@@ -13,36 +13,26 @@ def test_summary_counts_qualified_errors_and_filtered():
     results = [
         {
             "prospect": FakeProspect(),
-            "qualification": {
-                "decision": SimpleNamespace(status="QUALIFIED"),
-                "qualification": object(),
-            },
+            "decision": SimpleNamespace(status="QUALIFIED"),
+            "qualification": object(),
         },
         {
             "prospect": FakeProspect(),
-            "qualification": {
-                "status": "FILTERED",
-            },
+            "status": "FILTERED",
         },
         {
             "prospect": FakeProspect(),
-            "qualification": {
-                "status": "EXCLUDED",
-            },
+            "status": "EXCLUDED",
         },
         {
             "prospect": FakeProspect(),
-            "qualification": {
-                "decision": SimpleNamespace(status="REJECTED"),
-                "qualification": object(),
-            },
+            "decision": SimpleNamespace(status="REJECTED"),
+            "qualification": object(),
         },
         {
             "prospect": FakeProspect(),
-            "qualification": {
-                "decision": SimpleNamespace(status="REVIEW"),
-                "qualification": object(),
-            },
+            "decision": SimpleNamespace(status="REVIEW"),
+            "qualification": object(),
         },
         {
             "prospect": FakeProspect(),
@@ -61,10 +51,8 @@ def test_summary_does_not_count_ai_rejected_as_successful():
     results = [
         {
             "prospect": FakeProspect(),
-            "qualification": {
-                "decision": SimpleNamespace(status="REJECTED"),
-                "qualification": object(),
-            },
+            "decision": SimpleNamespace(status="REJECTED"),
+            "qualification": object(),
         }
     ]
 
@@ -72,6 +60,26 @@ def test_summary_does_not_count_ai_rejected_as_successful():
         "successful": 0,
         "errors": 0,
         "filtered": 1,
+    }
+
+
+def test_summary_counts_actual_workflow_qualified_shape():
+    results = [
+        {
+            "prospect": FakeProspect(),
+            "decision": SimpleNamespace(status="QUALIFIED"),
+            "qualification": SimpleNamespace(
+                profession="Business Coach",
+                sector="Consulting",
+            ),
+            "score": 85,
+        }
+    ]
+
+    assert summarize_results(results) == {
+        "successful": 1,
+        "errors": 0,
+        "filtered": 0,
     }
 
 
