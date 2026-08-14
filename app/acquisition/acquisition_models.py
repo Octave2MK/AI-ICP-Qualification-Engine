@@ -14,11 +14,12 @@ class ICP:
     keywords: list[str] = field(default_factory=list)
     required_keywords: list[str] = field(default_factory=list)
     forbidden_keywords: list[str] = field(default_factory=list)
+    max_prospects: int = 20
 
 
 @dataclass
 class SearchQuery:
-    """Une requête générée pour un moteur de recherche."""
+    """Une requête de recherche pour un moteur."""
 
     text: str
 
