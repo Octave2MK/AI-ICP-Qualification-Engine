@@ -24,9 +24,7 @@ class ICPQualificationPipeline:
         icp: ICPDefinition,
     ):
         # 1 - Vérification exclusion
-        exclusion = ExclusionEngine.check(
-            profile
-        )
+        exclusion = ExclusionEngine.check(profile)
 
         if exclusion["excluded"]:
             return {
@@ -36,10 +34,7 @@ class ICPQualificationPipeline:
             }
 
         # 2 - Pré-filtrage avant Gemini
-        if not ICPPreFilter.match(
-            profile,
-            icp,
-        ):
+        if not ICPPreFilter.match(profile, icp):
             return {
                 "status": "FILTERED",
                 "decision": "REJECT",
@@ -50,24 +45,21 @@ class ICPQualificationPipeline:
         # 3 - Cache strictement lié à l'ICP courant.
         # Un même prospect peut être qualifié pour plusieurs ICP différents.
         icp_fingerprint = icp.fingerprint()
-        cached = (
-            self._qualification_repository.get_by_prospect_and_icp(
-                db,
-                prospect.id,
-                icp_fingerprint,
-            )
+        cached = self._qualification_repository.get_by_prospect_and_icp(
+            db,
+            prospect.id,
+            icp_fingerprint,
         )
 
         if cached:
             decision = DecisionEngine.decide(
-                cached
+                cached,
+                minimum_confidence=icp.minimum_confidence,
             )
 
-            score, details = (
-                HybridScoringEngine.calculate_score(
-                    prospect,
-                    cached,
-                )
+            score, details = HybridScoringEngine.calculate_score(
+                prospect,
+                cached,
             )
 
             return {
@@ -79,11 +71,9 @@ class ICPQualificationPipeline:
             }
 
         # 4 - Qualification IA selon l'ICP dynamique
-        qualification = (
-            self._qualification_service.qualify(
-                profile,
-                icp,
-            )
+        qualification = self._qualification_service.qualify(
+            profile,
+            icp,
         )
 
         # 5 - Persistance avec l'identifiant de l'ICP courant
@@ -94,17 +84,16 @@ class ICPQualificationPipeline:
             icp_fingerprint,
         )
 
-        # 6 - Décision
+        # 6 - Décision selon le seuil de confiance de l'ICP courant
         decision = DecisionEngine.decide(
-            qualification
+            qualification,
+            minimum_confidence=icp.minimum_confidence,
         )
 
         # 7 - Score hybride
-        score, details = (
-            HybridScoringEngine.calculate_score(
-                prospect,
-                qualification,
-            )
+        score, details = HybridScoringEngine.calculate_score(
+            prospect,
+            qualification,
         )
 
         return {
