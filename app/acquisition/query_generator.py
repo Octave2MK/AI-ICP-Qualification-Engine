@@ -13,12 +13,9 @@ class QueryGenerator:
 
     Constat terrain (SearXNG, moteurs bing/duckduckgo) : l'opérateur `site:`
     n'est pas toujours transmis correctement par l'adaptateur SearXNG vers
-    le moteur sous-jacent, ce qui peut faire dériver la recherche vers des
-    résultats génériques hors-sujet. La variante en texte libre (sans
-    `site:`) ne dépend pas de cet opérateur : elle laisse `URLExtractor`
-    filtrer les URLs LinkedIn parmi un ensemble de résultats plus large,
-    plutôt que de compter sur le moteur pour restreindre lui-même la
-    recherche.
+    le moteur sous-jacent. Les variantes sans `site:` donnent donc au moteur
+    des signaux textuels explicites (`linkedin.com/in`) et laissent ensuite
+    le pipeline vérifier l'URL réelle avant de qualifier un résultat.
     """
 
     BASE_QUERY = "site:linkedin.com/in"
@@ -38,30 +35,42 @@ class QueryGenerator:
                     f'{self.BASE_QUERY} "{title}" "{country}"',
                 )
 
-                # Variante plus souple : le pays n'est pas entre guillemets.
                 self._add_query(
                     queries,
                     seen,
                     f'{self.BASE_QUERY} "{title}" {country}',
                 )
 
-                # Variante sans opérateur site: — ne dépend pas de son
-                # support par le moteur sous-jacent. URLExtractor filtrera
-                # les vraies URLs LinkedIn parmi des résultats plus larges.
+                # Variante indépendante de l'opérateur site:. Le domaine
+                # et le chemin LinkedIn sont conservés comme texte explicite
+                # afin d'aider les moteurs qui ignorent les opérateurs.
+                self._add_query(
+                    queries,
+                    seen,
+                    f'"{title}" {country} linkedin.com/in',
+                )
+
+                # Variante plus générale conservée en complément : certains
+                # moteurs classent mieux les profils lorsque "linkedin" est
+                # utilisé comme terme simple plutôt que comme chemin.
                 self._add_query(
                     queries,
                     seen,
                     f'"{title}" {country} linkedin',
                 )
 
-                # Une seule variante enrichie pour éviter une explosion du
-                # nombre d'appels lorsque l'utilisateur fournit beaucoup de
-                # mots-clés dans son ICP.
                 for keyword in keywords[: self.MAX_KEYWORD_VARIANTS]:
                     self._add_query(
                         queries,
                         seen,
                         f'{self.BASE_QUERY} "{title}" "{keyword}" {country}',
+                    )
+
+                    # Même variante enrichie sans dépendre de site:.
+                    self._add_query(
+                        queries,
+                        seen,
+                        f'"{title}" "{keyword}" {country} linkedin.com/in',
                     )
 
         return queries
