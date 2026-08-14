@@ -6,8 +6,10 @@ services:
 
     container_name: ai_icp_searxng
 
+    # Expose SearXNG only to the local machine.
+    # The container itself still listens on 0.0.0.0 internally.
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
     volumes:
       - ./settings.yml:/etc/searxng/settings.yml
