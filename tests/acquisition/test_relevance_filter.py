@@ -169,3 +169,51 @@ def test_empty_result_is_rejected(
     result = relevance_filter.evaluate(candidate, icp)
 
     assert result.passed is False
+
+
+def test_required_keywords_are_alternatives(
+    relevance_filter,
+):
+    icp = ICP(
+        job_titles=["Coach"],
+        countries=["France"],
+        required_keywords=[
+            "coaching",
+            "consultant",
+            "accompagnement",
+        ],
+    )
+
+    candidate = make_candidate(
+        title="Business Coach | France",
+        snippet="Accompagnement des dirigeants.",
+    )
+
+    result = relevance_filter.evaluate(candidate, icp)
+
+    assert result.passed is True
+    assert result.matched_required_keywords == ["accompagnement"]
+
+
+def test_required_keywords_are_actually_required(
+    relevance_filter,
+):
+    icp = ICP(
+        job_titles=["Coach"],
+        countries=["France"],
+        required_keywords=[
+            "coaching",
+            "consultant",
+            "accompagnement",
+        ],
+    )
+
+    candidate = make_candidate(
+        title="Business Coach | France",
+        snippet="J'accompagne les équipes.",
+    )
+
+    result = relevance_filter.evaluate(candidate, icp)
+
+    assert result.passed is False
+    assert result.matched_required_keywords == []
