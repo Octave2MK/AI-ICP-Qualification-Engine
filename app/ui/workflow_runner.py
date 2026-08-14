@@ -4,6 +4,7 @@ from app.database.database import (
     Base,
     engine,
 )
+from app.database.schema import ensure_schema
 
 # Import des modèles afin que toutes les tables soient enregistrées
 # dans Base.metadata avant create_all().
@@ -15,8 +16,10 @@ def run_workflow(
         progress_callback=None,
 ):
     # Garantit qu'une base fraîche possède également la table
-    # qualifications avant le démarrage du workflow.
+    # qualifications et applique les migrations additives nécessaires
+    # aux bases déjà existantes.
     Base.metadata.create_all(bind=engine)
+    ensure_schema()
 
     db = SessionLocal()
 
