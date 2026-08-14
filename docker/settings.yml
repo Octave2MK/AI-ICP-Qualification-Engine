@@ -40,7 +40,7 @@ engines:
     disabled: false
 
   - name: brave
-    disabled: true
+    disabled: false
 
   - name: startpage
     disabled: true

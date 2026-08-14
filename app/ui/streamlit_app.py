@@ -9,10 +9,7 @@ import streamlit as st
 
 from app.acquisition.acquisition_models import ICP
 from app.ui.workflow_runner import run_workflow
-from app.ui.prospect_view import (
-    results_to_dataframe,
-    summarize_results,
-)
+from app.ui.prospect_view import results_to_dataframe
 
 
 st.set_page_config(
@@ -101,13 +98,10 @@ if st.button("Lancer la recherche"):
 
         progress.empty()
 
-        summary = summarize_results(results)
-
         st.success(
-            f"{summary['successful']} réussis / "
-            f"{summary['errors']} erreurs / "
-            f"{summary['filtered']} filtrés"
+            f"{len(results)} prospects traités"
         )
+
 
         st.subheader("Résultats")
 
