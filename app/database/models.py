@@ -29,11 +29,10 @@ class Prospect(Base):
         cascade="all, delete-orphan"
     )
 
-    qualification = relationship(
+    qualifications = relationship(
         "Qualification",
         back_populates="prospect",
         cascade="all, delete-orphan",
-        uselist=False
     )
 
 
@@ -114,7 +113,7 @@ class Qualification(Base):
 
     prospect = relationship(
         "Prospect",
-        back_populates="qualification"
+        back_populates="qualifications"
     )
 
     offer_detected = Column(
