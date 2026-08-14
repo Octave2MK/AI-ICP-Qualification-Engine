@@ -7,7 +7,7 @@ server:
   # Avant tout déploiement sur un serveur accessible depuis Internet,
   # générer une vraie valeur aléatoire avec :
   #   sed -i "s|ultrasecretkey|$(openssl rand -hex 32)|g" docker/settings.yml
-  secret_key: "ultrasecretkey"
+  secret_key: "97dd2a4a3b6b0ac0321bf11d07e2e0b32e15bfd4804c5e93154984f80269ed8d"
   bind_address: "0.0.0.0"
   limiter: false
 
