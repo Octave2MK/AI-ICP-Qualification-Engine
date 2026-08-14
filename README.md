@@ -1,847 +1,327 @@
 # AI ICP Qualification Engine
 
-> **AI-powered B2B prospect sourcing, enrichment and qualification engine built around ICP-driven OSINT, modular search providers and LLM-based qualification.**
+> **ICP-driven B2B prospect sourcing, OSINT enrichment and AI qualification engine.**
 
-AI ICP Qualification Engine is a modular OSINT engine designed to discover, filter, enrich and qualify B2B prospects against an **Ideal Customer Profile (ICP)**.
+AI ICP Qualification Engine discovers public B2B prospects, filters them against a dynamic Ideal Customer Profile (ICP), enriches their public profile data and produces a structured qualification, decision and score.
 
-The project is designed for use cases such as:
+The project is designed for:
 
-* B2B lead generation
-* prospect sourcing
-* sales intelligence
-* outbound prospecting
-* consultant and coach acquisition
-* expert and freelancer discovery
-* ICP-based market research
+- B2B prospecting and lead generation
+- sales intelligence
+- outbound research
+- coach, consultant and expert discovery
+- ICP-based market research
 
-The engine combines deterministic rules, search-engine data, OSINT enrichment and LLM-based qualification into a modular pipeline.
+## Why this project?
 
----
-
-## 🎯 Core objective
-
-Traditional prospecting tools often rely heavily on predefined databases, static filters or expensive proprietary data sources.
-
-This project takes a different approach:
+The objective is not simply to collect profiles. The engine progressively reduces noise before spending enrichment and LLM resources:
 
 ```text
-ICP
- ↓
+Dynamic ICP
+    ↓
 Query generation
- ↓
-Search engine discovery
- ↓
+    ↓
+Search discovery
+    ↓
 Relevance filtering
- ↓
-LinkedIn URL extraction
- ↓
-URL normalization
- ↓
+    ↓
+LinkedIn URL extraction + normalization
+    ↓
 Deduplication
- ↓
+    ↓
+Prospect mapping
+    ↓
 OSINT enrichment
- ↓
-AI qualification
- ↓
-Decision engine
- ↓
+    ↓
+ICP pre-filter + exclusions
+    ↓
+ICP-scoped AI qualification
+    ↓
+Decision + confidence threshold
+    ↓
 Hybrid scoring
- ↓
-Persistence
+    ↓
+Persistence + reporting
 ```
 
-The objective is not simply to **find profiles**.
+The differentiator is the combination of **ICP-first discovery, search-based OSINT, deterministic filtering and LLM reasoning**, rather than relying exclusively on a static lead database.
 
-The objective is to identify profiles that are **actually relevant to a specific ICP**.
+## Core capabilities
 
----
+### Dynamic ICP
 
-# ✨ Key features
+The Streamlit interface builds the ICP at runtime. Current acquisition criteria include:
 
-## 🔎 ICP-driven acquisition
+- target job titles
+- countries
+- languages
+- sectors
+- keywords
+- required keywords
+- forbidden keywords
 
-The acquisition engine generates search queries from an ICP rather than relying on manually written queries.
+Qualification uses a dynamic `ICPDefinition` containing professions, sectors, target markets, required/forbidden keywords and `minimum_confidence`.
 
-An ICP can contain criteria such as:
+The pipeline does not hard-code a `business_coach` ICP.
 
-* target job titles
-* countries
-* languages
-* keywords
-* required keywords
-* forbidden keywords
+### Search abstraction
 
-Example:
-
-```text
-Job title: Business Coach
-Country: France
-Keywords: coaching, entrepreneur
-Forbidden keywords:
-student
-étudiant
-intern
-internship
-stagiaire
-job seeker
-```
-
----
-
-## 🌐 Modular search architecture
-
-Search engines are abstracted behind the `SearchProvider` interface.
+Search infrastructure is behind a provider interface:
 
 ```text
 SearchProvider
-      │
-      ├── DuckDuckGoProvider
-      │
-      └── SearXNGProvider
+├── DuckDuckGoProvider
+└── SearXNGProvider
 ```
 
-A `ProviderFactory` selects the configured provider.
+SearXNG is an external local metasearch service. The application talks to it over HTTP. Because upstream engines do not necessarily handle search operators consistently, `QueryGenerator` also produces a plain-text query variant that does not depend on `site:`.
 
-This makes the acquisition layer independent from a specific search engine and allows additional providers to be introduced without rewriting the pipeline.
-
-### Current providers
-
-* DuckDuckGo
-* SearXNG
-
-SearXNG acts as a search aggregation layer and can expose results from multiple underlying search engines.
-
-The application communicates with SearXNG through HTTP rather than embedding the search engine directly into the domain logic.
-
----
-
-# 🧠 Relevance filtering
-
-Search results are filtered **before expensive enrichment operations**.
-
-The relevance engine evaluates:
-
-* professional title
-* search-result snippet
-* ICP keywords
-* country
-* forbidden keywords
-
-Example scoring model:
-
-| Signal                              | Score |
-| ----------------------------------- | ----: |
-| Exact professional title in title   |   +50 |
-| Professional title in search result |   +40 |
-| ICP keyword in title                |   +15 |
-| ICP keyword in snippet              |   +10 |
-| Country detected                    |   +10 |
-| Forbidden keyword                   |  -100 |
-
-Default relevance threshold:
-
-```text
-50
-```
-
-This pre-filter prevents obviously irrelevant profiles from entering the enrichment and AI qualification stages.
-
-For example:
-
-```text
-Business Coach detected in snippet    +40
-France detected                       +10
--------------------------------------------
-Total                                  50
-```
-
-The candidate therefore passes the acquisition relevance threshold.
-
----
-
-# 🔗 LinkedIn URL processing
-
-The acquisition pipeline processes discovered URLs through several deterministic stages:
+### Relevance and acquisition pipeline
 
 ```text
 SearchResult
-    ↓
-URLExtractor
-    ↓
-URLNormalizer
-    ↓
-Deduplicator
-```
-
-This provides:
-
-* LinkedIn profile URL extraction
-* URL normalization
-* duplicate removal
-* deterministic processing before enrichment
-
----
-
-# ⚡ Acquisition pipeline
-
-The central acquisition pipeline is composed of explicit dependencies:
-
-```text
-QueryGenerator
-SearchProvider
+ ↓
 RelevanceFilter
+ ↓
 URLExtractor
+ ↓
 URLNormalizer
+ ↓
 Deduplicator
+ ↓
 ProspectMapper
 ```
 
-Conceptually:
+The `ProspectMapper` extracts a clean name and professional title from LinkedIn result titles while preserving legitimate internal hyphens and removing the final LinkedIn suffix.
 
-```python
-pipeline = AcquisitionPipeline(
-    query_generator=...,
-    search_provider=...,
-    relevance_filter=...,
-    url_extractor=...,
-    normalizer=...,
-    deduplicator=...,
-    prospect_mapper=...,
-)
-```
+### Qualification
 
-The pipeline is therefore independently testable and does not depend on a concrete search engine.
-
----
-
-# 🛡️ Resilience mechanisms
-
-The search layer includes infrastructure designed for real-world acquisition workloads.
-
-Current components include:
-
-* retry handling
-* rate limiting
-* search caching
-* provider abstraction
-* search error handling
-* logging
-* provider factory
-* SearXNG-specific caching and logging
-
-A failed search query does not necessarily terminate the complete acquisition process.
-
-The pipeline is designed to continue processing remaining queries when a provider error occurs.
-
----
-
-# 🧩 OSINT enrichment
-
-Once relevant profiles have been discovered, the project can continue with OSINT enrichment.
-
-The enrichment layer is responsible for transforming publicly available information into structured profile data.
-
-The architecture separates acquisition from enrichment so that:
+Qualification is deliberately hybrid:
 
 ```text
-Search discovery
-```
-
-and
-
-```text
-Profile enrichment
-```
-
-remain independent concerns.
-
-This makes it possible to change the search infrastructure without rewriting the enrichment system.
-
----
-
-# 🤖 AI qualification
-
-After acquisition and enrichment, the project uses an LLM-based qualification layer.
-
-The current architecture supports:
-
-* LLM abstraction
-* Gemini integration
-* fake/mock LLM implementations for tests
-* prompt construction
-* structured JSON parsing
-* result validation
-* semantic normalization
-* exclusion logic
-* decision logic
-
-The LLM is therefore not responsible for the entire application logic.
-
-Instead:
-
-```text
-Deterministic acquisition
+Deterministic exclusions
         ↓
-OSINT enrichment
+ICP pre-filter
         ↓
-LLM qualification
+ICP-specific cache lookup
         ↓
-Deterministic validation
+Gemini qualification
         ↓
-Decision
+Validation
+        ↓
+Decision / minimum_confidence
+        ↓
+Hybrid score
 ```
 
-This hybrid approach reduces the risk of allowing an LLM to make uncontrolled decisions.
+The qualification cache is scoped by **prospect + ICP fingerprint**, allowing the same prospect to be evaluated independently against different ICPs.
 
----
+### Streamlit reporting
 
-# 📊 Hybrid scoring
-
-The project combines deterministic signals and AI qualification.
-
-The scoring architecture can incorporate:
-
-* ICP relevance
-* professional signals
-* qualification results
-* exclusion signals
-* semantic matching
-* decision-engine outputs
-
-The goal is to produce a structured prospect score rather than a simple binary:
+The UI reports three distinct outcomes:
 
 ```text
-relevant / irrelevant
+X réussis / Y erreurs / Z filtrés
 ```
 
----
+- **Réussis**: workflow completed normally and produced a qualification result.
+- **Erreurs**: execution failed, for example because the Gemini API quota was exhausted.
+- **Filtrés**: deterministic filtering/exclusion prevented normal qualification.
 
-# 💾 Persistence
+A Gemini `429 RESOURCE_EXHAUSTED` is an API/quota error, not an ICP rejection.
 
-The application uses SQLAlchemy with SQLite for local persistence.
+## Architecture
 
-The database layer is separated from acquisition and qualification logic.
-
-This allows the application to:
-
-* persist prospects
-* retrieve prospects
-* maintain qualification information
-* support caching
-* separate persistence concerns from domain logic
-
-PostgreSQL is planned as a future production-oriented database option.
-
----
-
-# 🏗️ Architecture
-
-The project follows a modular architecture inspired by **Clean Architecture**, with explicit separation of responsibilities.
-
-High-level structure:
-
-```text
-Presentation
-     ↓
-Application
-     ↓
-Domain
-     ↓
-Infrastructure
-```
-
-Current application modules include:
+The codebase is organized around separated application concerns:
 
 ```text
 app/
-├── acquisition/
-├── batch/
-├── cache/
-├── core/
-├── database/
-├── enrichment/
-├── exceptions/
-├── pipeline/
-├── qualification/
-├── reporting/
-├── repositories/
-├── scoring/
-├── ui/
-├── factory.py
+├── acquisition/     # search, filtering, URL processing and acquisition
+├── batch/           # batch processing
+├── cache/           # application caching
+├── core/            # settings and logging
+├── database/        # SQLAlchemy models/database
+├── enrichment/      # OSINT profile enrichment
+├── exceptions/      # application exceptions
+├── pipeline/        # end-to-end orchestration
+├── qualification/  # ICP, LLM qualification and decisions
+├── reporting/       # result/report generation
+├── repositories/    # persistence access
+├── scoring/         # hybrid scoring
+├── ui/              # Streamlit interface
+├── factory.py       # application factories
 └── main.py
 ```
 
-The acquisition module currently contains:
+The project follows Clean Architecture-inspired separation, dependency injection, interface-based infrastructure and single-responsibility components.
 
-```text
-app/acquisition/
-├── acquisition_models.py
-├── deduplicator.py
-├── duckduckgo_provider.py
-├── exceptions.py
-├── normalizer.py
-├── pipeline.py
-├── prospect_mapper.py
-├── provider_factory.py
-├── query_generator.py
-├── search_provider.py
-├── searxng_provider.py
-├── service.py
-├── url_extractor.py
-├── batch/
-├── cache/
-└── network/
-```
+For a detailed technical description, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
----
+For installation and operational instructions, see [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 
-# 🧱 Design principles
+For development conventions and safe-change workflow, see [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
-The project is built around several engineering principles.
+## Installation
 
-### Single Responsibility Principle
+Requirements:
 
-Each component performs a clearly defined task.
+- Python 3.13
+- Docker Desktop for local SearXNG
+- Gemini API key for AI qualification
 
-For example:
-
-```text
-QueryGenerator       → generates queries
-SearchProvider       → performs searches
-RelevanceFilter      → evaluates search-result relevance
-URLExtractor         → extracts URLs
-URLNormalizer        → normalizes URLs
-Deduplicator         → removes duplicates
-ProspectMapper       → maps URLs to prospects
-```
-
-### Dependency Injection
-
-Core services receive their dependencies instead of creating them internally.
-
-This improves:
-
-* testability
-* maintainability
-* extensibility
-* provider replacement
-
-### Interface-based design
-
-External infrastructure is accessed through interfaces where appropriate.
-
-For example:
-
-```python
-class SearchProvider(ABC):
-    @abstractmethod
-    def search(self, query):
-        ...
-```
-
-This allows the acquisition pipeline to remain independent from the actual search implementation.
-
-### Test Driven Development
-
-The project uses automated tests extensively to validate individual components and integration points.
-
----
-
-# 🧪 Testing
-
-The project currently has:
-
-```text
-114 tests passing
-0 tests failing
-```
-
-Latest verified state:
-
-```text
-114 passed
-```
-
-The test suite covers areas including:
-
-* acquisition pipeline
-* search providers
-* SearXNG provider
-* DuckDuckGo provider
-* provider factory
-* pipeline factory
-* relevance filtering
-* URL normalization
-* deduplication
-* retry logic
-* rate limiting
-* search cache
-* SearXNG cache
-* error handling
-* batch processing
-* integration components
-
-Run the complete test suite with:
-
-```bash
-pytest -q
-```
-
-For verbose output:
-
-```bash
-pytest -vv
-```
-
----
-
-# ⚙️ Requirements
-
-Current core stack includes:
-
-* Python 3.13
-* SQLAlchemy
-* SQLite
-* Streamlit
-* Google Gemini API
-* HTTPX
-* BeautifulSoup
-* lxml
-* Pandas
-* OpenPyXL
-* Pytest
-* DuckDuckGo search integration
-
-SearXNG is used as an external search service and is therefore not installed as a Python dependency of the application.
-
----
-
-# 🚀 Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/Octave2MK/AI-ICP-Qualification-Engine.git
-cd AI-ICP-Qualification-Engine
-```
-
-Create a virtual environment:
-
-```bash
-python -m venv .venv
-```
-
-Activate it on Windows:
+Create and activate a virtual environment on Windows:
 
 ```powershell
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
 Install dependencies:
 
-```bash
+```powershell
 pip install -r requirements.txt
-```
-
-For development and testing:
-
-```bash
 pip install -r requirements-dev.txt
 ```
 
----
-
-# 🔐 Environment configuration
-
-Create your environment file:
-
-```bash
-cp .env.example .env
-```
-
-On Windows PowerShell:
+Create `.env`:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Then configure the required variables.
+Configure the required environment variables, including the Gemini API key and application database settings.
 
-Example:
+**Never commit `.env` or API keys.**
 
-```env
-GEMINI_API_KEY=your_api_key_here
-GEMINI_MODEL=your_gemini_model
-DATABASE_URL=sqlite:///data/icp.db
-LLM_PROVIDER=gemini
+## Run SearXNG locally
+
+```powershell
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-For SearXNG deployments, configure the SearXNG endpoint according to the application's settings.
+Check it:
 
-**Never commit `.env` or API keys to Git.**
+```powershell
+docker compose -f docker/docker-compose.yml ps
+```
 
----
-
-# 🔍 SearXNG
-
-SearXNG is used as a configurable search provider for the acquisition layer.
-
-The architecture is:
+The host binding is intentionally local-only:
 
 ```text
-AI ICP Qualification Engine
-          ↓
-   SearXNGProvider
-          ↓
-       SearXNG
-          ↓
- ┌────────┼────────┐
- ↓        ↓        ↓
-DDG     Bing     Qwant
-...
+127.0.0.1:8080:8080
 ```
 
-This architecture separates the prospecting engine from individual search-engine implementations.
+Test the HTTP API:
 
-A local SearXNG instance can be used during development.
+```powershell
+Invoke-RestMethod "http://localhost:8080/search?q=site%3Alinkedin.com%2Fin%20%22Business%20Coach%22%20France&format=json"
+```
 
-The application communicates with it through its HTTP API.
+If the connection is refused, inspect the container:
 
----
+```powershell
+docker compose -f docker/docker-compose.yml logs --tail=100 searxng
+```
 
-# ▶️ Running the application
+## Run the application
 
-The project includes a Streamlit interface.
-
-Run:
-
-```bash
+```powershell
 streamlit run app/ui/streamlit_app.py
 ```
 
-The interface is intended to provide a higher-level entry point for the acquisition and qualification workflow.
+Then define the ICP in the interface and launch the workflow.
 
----
+## Testing
 
-# 🔄 End-to-end workflow
+Run the full suite:
 
-The complete conceptual workflow is:
-
-```text
-                ICP
-                 │
-                 ▼
-          QueryGenerator
-                 │
-                 ▼
-         SearchProvider
-        ┌────────┴────────┐
-        │                 │
-   DuckDuckGo          SearXNG
-        │                 │
-        └────────┬────────┘
-                 ▼
-           SearchResult
-                 │
-                 ▼
-        RelevanceFilter
-                 │
-                 ▼
-          URLExtractor
-                 │
-                 ▼
-         URLNormalizer
-                 │
-                 ▼
-          Deduplicator
-                 │
-                 ▼
-        ProspectMapper
-                 │
-                 ▼
-          OSINT Enrichment
-                 │
-                 ▼
-       Profile / ProfileData
-                 │
-                 ▼
-        AI Qualification
-                 │
-                 ▼
-        Result Validation
-                 │
-                 ▼
-        Decision Engine
-                 │
-                 ▼
-         Hybrid Scoring
-                 │
-                 ▼
-            Repository
-                 │
-                 ▼
-              SQLite
+```powershell
+pytest -q
 ```
 
----
-
-# 🎯 What makes the project different?
-
-The main differentiator is not simply the use of an LLM.
-
-The project combines:
-
-### 1. ICP-first discovery
-
-The search process starts from the customer's ICP rather than from a generic database.
-
-### 2. Search-engine-based OSINT
-
-Instead of depending exclusively on a proprietary lead database, the engine discovers public profiles through search infrastructure.
-
-### 3. Multi-stage filtering
-
-Candidates are progressively reduced:
+The latest repository state was verified with:
 
 ```text
-Search
- ↓
-Relevance
- ↓
-URL validation
- ↓
-Deduplication
- ↓
-Enrichment
- ↓
-AI qualification
- ↓
-Scoring
+133 passed
 ```
 
-This avoids spending expensive enrichment and LLM resources on obviously irrelevant candidates.
+Run the CI-equivalent non-integration suite:
 
-### 4. Hybrid intelligence
+```powershell
+pytest -q -m "not integration"
+```
 
-The system combines:
+Integration tests are marked in `pytest.ini` and are intentionally excluded from the default GitHub Actions test command because they can require external services, credentials or quotas.
+
+GitHub Actions is configured in `.github/workflows/tests.yml` for pushes and pull requests targeting `main`.
+
+## Gemini quota errors
+
+The AI qualification stage uses Gemini. Free-tier or project limits can produce:
 
 ```text
-Deterministic rules
-        +
-OSINT data
-        +
-Semantic/LLM reasoning
-        =
-Qualification
+429 RESOURCE_EXHAUSTED
 ```
 
-### 5. Provider independence
+This is an infrastructure/API limitation. It should be counted as an execution error rather than a prospect rejection. See the user guide for troubleshooting.
 
-Search infrastructure is abstracted.
+## SearXNG and search quality
 
-A search provider can be replaced without rewriting the acquisition pipeline.
+SearXNG can aggregate several upstream search engines. Their availability and interpretation of operators can vary. CAPTCHA, access-denied responses and inconsistent `site:` handling can therefore affect individual searches.
 
----
+The application mitigates operator reliability by generating a plain-text query variant in addition to operator-based variants. This does not guarantee that every upstream engine returns LinkedIn-only results; downstream relevance filtering and URL validation remain essential.
 
-# 📁 Repository structure
+## Security notes
 
-```text
-AI-ICP-Qualification-Engine/
-│
-├── app/
-│   ├── acquisition/
-│   ├── batch/
-│   ├── cache/
-│   ├── core/
-│   ├── database/
-│   ├── enrichment/
-│   ├── exceptions/
-│   ├── pipeline/
-│   ├── qualification/
-│   ├── reporting/
-│   ├── repositories/
-│   ├── scoring/
-│   ├── ui/
-│   ├── factory.py
-│   └── main.py
-│
-├── configs/
-│
-├── docker/
-│
-├── tests/
-│   ├── acquisition/
-│   ├── integration/
-│   └── ...
-│
-├── .env.example
-├── .gitignore
-├── README.md
-├── arborescence.txt
-├── requirements.txt
-└── requirements-dev.txt
-```
+- `.env` and credentials must remain outside version control.
+- The local SearXNG host port is bound to `127.0.0.1`.
+- `docker/settings.yml` contains a generated local secret key and is intended for local development.
+- Before any Internet-facing deployment, review SearXNG authentication, secret management, bind addresses, rate limiting and reverse-proxy configuration.
 
----
+## Current status
 
-# 🛣️ Roadmap
+| Area | Status |
+|---|---|
+| Dynamic ICP | ✅ |
+| Query generation | ✅ |
+| Search provider abstraction | ✅ |
+| DuckDuckGo provider | ✅ |
+| SearXNG provider | ✅ |
+| Relevance filtering | ✅ |
+| LinkedIn URL extraction/normalization | ✅ |
+| Prospect mapping | ✅ |
+| OSINT enrichment | ✅ |
+| ICP pre-filter | ✅ |
+| ICP-scoped qualification cache | ✅ |
+| Gemini qualification | ✅ |
+| Minimum confidence | ✅ |
+| Hybrid scoring | ✅ |
+| SQLite persistence | ✅ |
+| Streamlit workflow/reporting | ✅ |
+| Automated tests | ✅ |
+| GitHub Actions CI | ✅ |
+| Production hardening | 🚧 |
 
-Planned improvements include:
+## Roadmap
 
-* [ ] Complete production-grade SearXNG deployment
-* [ ] End-to-end real acquisition testing
-* [ ] Parallel search processing
-* [ ] Advanced provider fallback
-* [ ] PostgreSQL support
-* [ ] REST API
-* [ ] Multi-LLM support
-* [ ] Improved enrichment coverage
-* [ ] Dockerized production deployment
-* [ ] CI/CD pipeline
-* [ ] Authentication
-* [ ] Multi-tenant workspaces
-* [ ] Advanced prospect analytics
-* [ ] Production monitoring and observability
+The next engineering priorities are production hardening and empirical validation rather than adding more architectural layers prematurely:
 
----
+- real multi-search evaluation and ground-truth datasets
+- precision/recall measurement and threshold calibration
+- robust search-provider fallback strategy
+- improved enrichment coverage
+- PostgreSQL production support
+- API layer
+- multi-LLM support
+- observability and monitoring
+- authentication and multi-tenant workspaces
 
-# ⚠️ Project status
+## Documentation
 
-The project is under active development.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — technical architecture and component contracts
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — installation, SearXNG, Streamlit and troubleshooting
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — development workflow, invariants and testing rules
 
-Current verified state:
+## License
 
-```text
-Architecture              ✅
-Acquisition engine        ✅
-Search abstraction        ✅
-DuckDuckGo provider       ✅
-SearXNG provider          ✅
-Relevance filtering       ✅
-URL extraction            ✅
-URL normalization         ✅
-Deduplication             ✅
-OSINT enrichment          ✅
-AI qualification          ✅
-Hybrid scoring            ✅
-SQLite persistence        ✅
-Automated tests           ✅
-114 tests passing         ✅
-Production hardening      🚧
-```
-
-Passing tests demonstrate software correctness against the current automated test suite. They do not by themselves guarantee production reliability against live search engines, external websites, rate limits or changing web structures.
-
----
-
-# 👤 Author
-
-**Morel Octave**
-
-AI / OSINT / B2B prospecting project.
-
----
-
-# 📄 License
-
-License information will be added when the project's distribution model is finalized.
+No open-source license has been declared in the repository yet. Unless a license is added, normal copyright restrictions apply.
