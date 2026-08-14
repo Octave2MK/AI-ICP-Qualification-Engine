@@ -43,6 +43,15 @@ sector = st.text_input(
     value="Coaching",
 )
 
+max_prospects = st.number_input(
+    "Nombre de prospects souhaités",
+    min_value=1,
+    max_value=100,
+    value=20,
+    step=1,
+    help="Nombre maximal de profils à conserver après filtrage et déduplication.",
+)
+
 required_keywords_text = st.text_input(
     "Mots-clés obligatoires",
     value="",
@@ -75,6 +84,7 @@ if st.button("Lancer la recherche"):
         keywords=required_keywords,
         required_keywords=required_keywords,
         forbidden_keywords=forbidden_keywords,
+        max_prospects=int(max_prospects),
     )
 
     progress = st.progress(0, text="Initialisation...")
