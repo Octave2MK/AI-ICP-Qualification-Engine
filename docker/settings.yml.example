@@ -1,7 +1,8 @@
 use_default_settings: true
 
 server:
-  secret_key: "ultrasecretkey"
+  # Replace this value before starting SearXNG.
+  secret_key: "CHANGE_ME_TO_A_RANDOM_SECRET"
   bind_address: "0.0.0.0"
   limiter: false
 
