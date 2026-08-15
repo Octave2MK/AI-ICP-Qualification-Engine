@@ -1,0 +1,43 @@
+use_default_settings: true
+
+server:
+  secret_key: "ultrasecretkey"
+  bind_address: "0.0.0.0"
+  limiter: false
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
+
+ui:
+  static_use_hash: true
+
+botdetection:
+  enabled: false
+
+enabled_plugins:
+  - Hash plugin
+
+engines:
+  - name: duckduckgo
+    disabled: false
+
+  - name: bing
+    disabled: false
+
+  - name: qwant
+    disabled: false
+
+  - name: mojeek
+    disabled: false
+
+  - name: brave
+    disabled: false
+
+  - name: startpage
+    disabled: true
+
+  - name: wikidata
+    disabled: true

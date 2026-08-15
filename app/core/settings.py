@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -63,9 +63,9 @@ class Settings:
         "gemini",
     )
 
-    GEMINI_API_KEY: str = os.getenv(
-        "GEMINI_API_KEY",
-        "",
+    GEMINI_API_KEY: str = field(
+        default=os.getenv("GEMINI_API_KEY", ""),
+        repr=False,
     )
 
     GEMINI_MODEL: str = os.getenv(
@@ -73,9 +73,9 @@ class Settings:
         "gemini-3.6-flash",
     )
 
-    OPENAI_API_KEY: str = os.getenv(
-        "OPENAI_API_KEY",
-        "",
+    OPENAI_API_KEY: str = field(
+        default=os.getenv("OPENAI_API_KEY", ""),
+        repr=False,
     )
 
 settings = Settings()

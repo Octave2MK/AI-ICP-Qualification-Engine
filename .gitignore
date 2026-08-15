@@ -20,6 +20,10 @@ __pycache__/
 # Environment variables
 .env
 
+# SearXNG : contient un secret généré localement, ne jamais commiter.
+# Un template sans secret réel est fourni dans docker/settings.yml.example
+docker/settings.yml
+
 # Database
 *.db
 *.sqlite
