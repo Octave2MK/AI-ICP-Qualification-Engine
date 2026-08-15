@@ -29,12 +29,14 @@ ICPQualificationPipeline
  ├─ exclusion
  ├─ ICP pre-filter
  ├─ ICP-scoped qualification cache
- ├─ LLM qualification
+ ├─ LLM batch qualification
  ├─ validation
  ├─ decision
  └─ hybrid scoring
  ↓
-Persistence / reporting / Streamlit
+Persistence
+ ↓
+Streamlit result table
 ```
 
 ## 2. Dynamic ICP
@@ -81,23 +83,19 @@ The final `- LinkedIn` suffix is removed while legitimate internal hyphens remai
 6. Decision using the ICP's `minimum_confidence`.
 7. Hybrid scoring.
 
-This separation keeps deterministic safeguards around the LLM rather than allowing the model to control the entire workflow.
+For the production workflow, `run_batch()` applies the same preparation and cache checks to all pending profiles and sends the remaining profiles to `QualificationService.qualify_batch()`. The LLM receives one batch request for the pending profiles rather than one request per profile.
 
 ## 6. Streamlit
 
 `app/ui/streamlit_app.py` builds the dynamic ICP from user input and calls the workflow runner. Results are converted to a dataframe for display.
 
-The UI also reports three distinct workflow outcomes:
-
-```text
-X réussis / Y erreurs / Z filtrés
-```
-
-A successful item means the workflow reached a normal qualification result without an execution error. An item with a Gemini/API failure is an error, not a successful qualification. A deterministic rejection before/without successful qualification is represented as filtered according to the reporting layer.
+The current interface displays the number of prospects processed and the resulting table. The table contains the available prospect identity, LinkedIn URL, qualification/scoring fields and execution errors when present.
 
 ## 7. Persistence
 
 The current local persistence stack is SQLAlchemy + SQLite. Qualification records are scoped to the ICP fingerprint to prevent cross-ICP cache contamination.
+
+SQLAlchemy sessions use `expire_on_commit=False` so ORM objects returned by the workflow remain readable after commits when they are consumed by the Streamlit result layer. Session ownership remains at the workflow/database boundary.
 
 ## 8. Infrastructure
 
