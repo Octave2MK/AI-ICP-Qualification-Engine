@@ -12,6 +12,155 @@ The project is designed for:
 - coach, consultant and expert discovery
 - ICP-based market research
 
+## Quick start for users
+
+The easiest way to run the complete application is **Docker**. You do not need to install Python or the project dependencies on your computer.
+
+### Prerequisites
+
+- Docker Desktop with Docker Compose
+- A Gemini API key for AI qualification
+- Git, if cloning the repository from GitHub
+
+### 1. Clone the repository
+
+```powershell
+git clone https://github.com/Octave2MK/AI-ICP-Qualification-Engine.git
+cd AI-ICP-Qualification-Engine
+```
+
+### 2. Create the local configuration
+
+Create the SearXNG configuration from the committed template:
+
+```powershell
+Copy-Item docker/settings.yml.example docker/settings.yml
+```
+
+Open `docker/settings.yml` and replace `CHANGE_ME_TO_A_RANDOM_SECRET` with a random secret value. This local file is ignored by Git.
+
+Create the environment file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Open `.env` and set:
+
+```text
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+Do not commit `.env` or share your API key.
+
+### 3. Start the application
+
+```powershell
+docker compose -f docker/docker-compose.yml up -d --build
+```
+
+Then open:
+
+**http://localhost:8501**
+
+Define your ICP in Streamlit and launch the workflow.
+
+### Useful Docker commands
+
+Check the services:
+
+```powershell
+docker compose -f docker/docker-compose.yml ps
+```
+
+View application logs:
+
+```powershell
+docker compose -f docker/docker-compose.yml logs -f app
+```
+
+View SearXNG logs:
+
+```powershell
+docker compose -f docker/docker-compose.yml logs -f searxng
+```
+
+Stop the application without deleting the database:
+
+```powershell
+docker compose -f docker/docker-compose.yml down
+```
+
+Start it again without rebuilding:
+
+```powershell
+docker compose -f docker/docker-compose.yml up -d
+```
+
+The SQLite database is stored in the Docker-managed `icp_data` volume and therefore survives a normal `docker compose down`.
+
+To intentionally delete the persisted database:
+
+```powershell
+docker compose -f docker/docker-compose.yml down -v
+```
+
+### What Docker runs
+
+```text
+Browser
+   ↓
+Streamlit :8501
+   ↓ HTTP
+SearXNG :8080
+   ↓
+Upstream search engines
+```
+
+The application communicates with SearXNG through the Docker network at `http://searxng:8080`. The host-facing SearXNG port is only available locally at `127.0.0.1:8080`.
+
+The Gemini API key is passed to the application container through the environment; it is not baked into the Docker image.
+
+For the complete Docker reference, see [`docs/DOCKER.md`](docs/DOCKER.md).
+
+## Developer setup
+
+Python is required only when developing or testing the application outside Docker.
+
+Requirements:
+
+- Python 3.13
+- Docker Desktop for local SearXNG when running the application directly from Python
+- Gemini API key for AI qualification
+
+Create and activate a virtual environment on Windows:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+Install dependencies:
+
+```powershell
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
+
+Create `.env`:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+When running the application directly with Python, configure the local SearXNG URL and database settings in `.env` as appropriate for your environment. Do not commit `.env` or API keys.
+
+Run the application:
+
+```powershell
+streamlit run app/ui/streamlit_app.py
+```
+
 ## Why this project?
 
 The objective is not simply to collect profiles. The engine progressively reduces noise before spending enrichment and LLM resources:
@@ -151,77 +300,9 @@ For a detailed technical description, see [`docs/ARCHITECTURE.md`](docs/ARCHITEC
 
 For installation and operational instructions, see [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 
+For Docker usage, see [`docs/DOCKER.md`](docs/DOCKER.md).
+
 For development conventions and safe-change workflow, see [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
-
-## Installation
-
-Requirements:
-
-- Python 3.13
-- Docker Desktop for local SearXNG
-- Gemini API key for AI qualification
-
-Create and activate a virtual environment on Windows:
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-```
-
-Install dependencies:
-
-```powershell
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-```
-
-Create `.env`:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Configure the required environment variables, including the Gemini API key and application database settings.
-
-**Never commit `.env` or API keys.**
-
-## Run SearXNG locally
-
-```powershell
-docker compose -f docker/docker-compose.yml up -d
-```
-
-Check it:
-
-```powershell
-docker compose -f docker/docker-compose.yml ps
-```
-
-The host binding is intentionally local-only:
-
-```text
-127.0.0.1:8080:8080
-```
-
-Test the HTTP API:
-
-```powershell
-Invoke-RestMethod "http://localhost:8080/search?q=site%3Alinkedin.com%2Fin%20%22Business%20Coach%22%20France&format=json"
-```
-
-If the connection is refused, inspect the container:
-
-```powershell
-docker compose -f docker/docker-compose.yml logs --tail=100 searxng
-```
-
-## Run the application
-
-```powershell
-streamlit run app/ui/streamlit_app.py
-```
-
-Then define the ICP in the interface and launch the workflow.
 
 ## Testing
 
@@ -305,7 +386,8 @@ The next engineering priorities are production hardening and empirical validatio
 ## Documentation
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — technical architecture and component contracts
-- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — installation, SearXNG, Streamlit and troubleshooting
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — installation, Streamlit and troubleshooting
+- [`docs/DOCKER.md`](docs/DOCKER.md) — Docker deployment and end-user setup
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — development workflow, invariants and testing rules
 
 ## License
