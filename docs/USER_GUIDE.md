@@ -37,7 +37,7 @@ The local HTTP API is expected at:
 http://localhost:8080
 ```
 
-A direct health/search check can be performed with PowerShell:
+A direct search check can be performed with PowerShell:
 
 ```powershell
 Invoke-RestMethod "http://localhost:8080/search?q=site%3Alinkedin.com%2Fin%20%22Business%20Coach%22%20France&format=json"
@@ -66,7 +66,7 @@ The interface lets you define the ICP dynamically:
 
 Multiple keyword values are entered as comma-separated values.
 
-After the workflow completes, the interface keeps the presentation intentionally simple: it displays the number of prospects processed and the result table. There is no separate reporting dashboard or success/error/filtered summary layer.
+After the workflow completes, the interface displays the number of prospects processed and the result table.
 
 ## 4. Reading the result table
 
@@ -109,23 +109,23 @@ The qualification stage uses Gemini. Free-tier quotas can cause errors such as:
 429 RESOURCE_EXHAUSTED
 ```
 
-This means the API quota/rate limit was exhausted. It is distinct from a prospect being rejected by the ICP.
+This means the API quota or rate limit was exhausted. It is distinct from a prospect being rejected by the ICP.
 
-Because qualification is batched, one API request can cover several profiles. The exact number of Gemini requests depends on the number of profiles that survive pre-filtering and cache lookup, the batch implementation and any retries/failures.
+Because qualification is batched, one API request can cover several profiles. The exact number of Gemini requests depends on the number of profiles that survive pre-filtering and cache lookup, the batch implementation and any retries or failures.
 
-## 8. Streamlit / SQLAlchemy session errors
+## 8. Streamlit / SQLAlchemy session handling
 
-The Streamlit workflow keeps the database session alive while the end-to-end workflow executes and configures SQLAlchemy sessions with `expire_on_commit=False`.
+The application uses SQLAlchemy sessions with `expire_on_commit=False`. This keeps ORM attributes available after commits when workflow results are consumed by the Streamlit layer.
 
-This prevents ORM objects returned by the workflow from being expired immediately after a commit and then failing when the UI accesses their attributes after the session lifecycle changes.
+The workflow/database boundary remains responsible for session ownership. The Streamlit layer should not create ad-hoc replacement sessions to work around ORM lifecycle errors.
 
-If you see an error such as:
+If an error such as the following appears:
 
 ```text
 Instance <Prospect ...> is not bound to a Session; attribute refresh operation cannot proceed
 ```
 
-first make sure the local repository contains the current `SessionLocal` configuration and that the workflow does not close the session before all required ORM attributes have been materialized. Do not work around the error by opening random extra sessions in the Streamlit layer; session ownership belongs to the workflow runner/database boundary.
+verify that the current repository version is installed and that the workflow has not been modified to close its session before result consumption.
 
 ## 9. Development test suite
 
