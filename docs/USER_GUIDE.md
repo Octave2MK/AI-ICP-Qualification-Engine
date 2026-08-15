@@ -75,12 +75,6 @@ Typical fields include:
 - `Nom`: mapped prospect name.
 - `LinkedIn`: normalized LinkedIn profile URL.
 - `Métier`: extracted or enriched professional title.
-- `Score ICP`: resulting qualification/scoring value.
-- `ICP Match`: whether the qualification matches the current ICP.
-- `Confiance`: model confidence used by the decision layer.
-- `Offre B2B`: detected B2B offer signal.
-- `Secteur`: qualified sector.
-- `Profession`: qualified profession.
 - `Erreur`: execution error, when one occurred.
 
 An error on one prospect does not necessarily mean that the acquisition/search stage failed for the complete workflow. Inspect the `Erreur` column when a candidate could not be fully processed.
