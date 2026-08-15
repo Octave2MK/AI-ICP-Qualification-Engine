@@ -62,24 +62,13 @@ The interface lets you define the ICP dynamically:
 - Secteur / domaine
 - Mots-clés obligatoires
 - Mots-clés interdits
+- Nombre de prospects souhaités
 
 Multiple keyword values are entered as comma-separated values.
 
-## 4. Understand the workflow result
+After the workflow completes, the interface keeps the presentation intentionally simple: it displays the number of prospects processed and the result table. There is no separate reporting dashboard or success/error/filtered summary layer.
 
-The interface reports:
-
-```text
-X réussis / Y erreurs / Z filtrés
-```
-
-- **Réussis**: the workflow completed normally and produced a qualification result.
-- **Erreurs**: processing failed for the candidate, for example because the Gemini API returned a quota/rate-limit error.
-- **Filtrés**: the candidate was rejected by deterministic filtering/exclusion logic and therefore did not require a normal LLM qualification result.
-
-A Gemini `429 RESOURCE_EXHAUSTED` is an infrastructure/API error. It must not be interpreted as an ICP rejection.
-
-## 5. Reading the result table
+## 4. Reading the result table
 
 Typical fields include:
 
@@ -93,6 +82,16 @@ Typical fields include:
 - `Secteur`: qualified sector.
 - `Profession`: qualified profession.
 - `Erreur`: execution error, when one occurred.
+
+An error on one prospect does not necessarily mean that the acquisition/search stage failed for the complete workflow. Inspect the `Erreur` column when a candidate could not be fully processed.
+
+## 5. Qualification and Gemini batching
+
+Before the LLM stage, the engine applies deterministic exclusions, ICP pre-filtering and the ICP-scoped qualification cache.
+
+Profiles that still require AI qualification are grouped into a batch. Gemini is then called once for the batch instead of once per profile. The returned qualification results are mapped back to the corresponding prospects.
+
+This reduces unnecessary Gemini requests, especially when processing many prospects. Cached or deterministically filtered profiles are not sent to Gemini.
 
 ## 6. Search quality expectations
 
@@ -110,11 +109,25 @@ The qualification stage uses Gemini. Free-tier quotas can cause errors such as:
 429 RESOURCE_EXHAUSTED
 ```
 
-This means the API quota/rate limit was exhausted. It is distinct from a prospect being filtered by the ICP.
+This means the API quota/rate limit was exhausted. It is distinct from a prospect being rejected by the ICP.
 
-When testing the complete workflow, monitor the error count separately from the filtered count.
+Because qualification is batched, one API request can cover several profiles. The exact number of Gemini requests depends on the number of profiles that survive pre-filtering and cache lookup, the batch implementation and any retries/failures.
 
-## 8. Development test suite
+## 8. Streamlit / SQLAlchemy session errors
+
+The Streamlit workflow keeps the database session alive while the end-to-end workflow executes and configures SQLAlchemy sessions with `expire_on_commit=False`.
+
+This prevents ORM objects returned by the workflow from being expired immediately after a commit and then failing when the UI accesses their attributes after the session lifecycle changes.
+
+If you see an error such as:
+
+```text
+Instance <Prospect ...> is not bound to a Session; attribute refresh operation cannot proceed
+```
+
+first make sure the local repository contains the current `SessionLocal` configuration and that the workflow does not close the session before all required ORM attributes have been materialized. Do not work around the error by opening random extra sessions in the Streamlit layer; session ownership belongs to the workflow runner/database boundary.
+
+## 9. Development test suite
 
 Run all tests:
 
