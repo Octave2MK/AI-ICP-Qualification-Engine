@@ -41,7 +41,9 @@ Decision + confidence threshold
     ↓
 Hybrid scoring
     ↓
-Persistence + reporting
+Persistence
+    ↓
+Streamlit results
 ```
 
 The differentiator is the combination of **ICP-first discovery, search-based OSINT, deterministic filtering and LLM reasoning**, rather than relying exclusively on a static lead database.
@@ -105,7 +107,7 @@ ICP pre-filter
         ↓
 ICP-specific cache lookup
         ↓
-Gemini qualification
+Gemini batch qualification
         ↓
 Validation
         ↓
@@ -114,19 +116,15 @@ Decision / minimum_confidence
 Hybrid score
 ```
 
+When several profiles require AI qualification during one workflow, the service uses Gemini batch analysis so eligible profiles can be qualified in a single LLM request rather than making one request per profile. Profiles rejected before qualification or already present in the ICP-scoped cache are not sent to Gemini.
+
 The qualification cache is scoped by **prospect + ICP fingerprint**, allowing the same prospect to be evaluated independently against different ICPs.
 
-### Streamlit reporting
+### Streamlit interface
 
-The UI reports three distinct outcomes:
+The current Streamlit interface intentionally keeps the presentation simple. After a workflow completes it displays the number of prospects processed and the result table.
 
-```text
-X réussis / Y erreurs / Z filtrés
-```
-
-- **Réussis**: workflow completed normally and produced a qualification result.
-- **Erreurs**: execution failed, for example because the Gemini API quota was exhausted.
-- **Filtrés**: deterministic filtering/exclusion prevented normal qualification.
+The interface does **not** expose a separate `X réussis / Y erreurs / Z filtrés` reporting dashboard. Errors remain attached to individual workflow results and can be inspected in the result table.
 
 A Gemini `429 RESOURCE_EXHAUSTED` is an API/quota error, not an ICP rejection.
 
@@ -145,13 +143,14 @@ app/
 ├── exceptions/      # application exceptions
 ├── pipeline/        # end-to-end orchestration
 ├── qualification/  # ICP, LLM qualification and decisions
-├── reporting/       # result/report generation
 ├── repositories/    # persistence access
 ├── scoring/         # hybrid scoring
 ├── ui/              # Streamlit interface
 ├── factory.py       # application factories
 └── main.py
 ```
+
+The former standalone `app/reporting/` layer has been removed because the current product flow does not require a separate reporting subsystem. Result presentation remains part of the Streamlit UI and workflow result mapping.
 
 The project follows Clean Architecture-inspired separation, dependency injection, interface-based infrastructure and single-responsibility components.
 
@@ -239,12 +238,6 @@ Run the full suite:
 pytest -q
 ```
 
-The latest repository state was verified with:
-
-```text
-133 passed
-```
-
 Run the CI-equivalent non-integration suite:
 
 ```powershell
@@ -293,11 +286,11 @@ The application mitigates operator reliability by generating a plain-text query 
 | OSINT enrichment | ✅ |
 | ICP pre-filter | ✅ |
 | ICP-scoped qualification cache | ✅ |
-| Gemini qualification | ✅ |
+| Gemini batch qualification | ✅ |
 | Minimum confidence | ✅ |
 | Hybrid scoring | ✅ |
 | SQLite persistence | ✅ |
-| Streamlit workflow/reporting | ✅ |
+| Streamlit workflow | ✅ |
 | Automated tests | ✅ |
 | GitHub Actions CI | ✅ |
 | Production hardening | 🚧 |
