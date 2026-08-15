@@ -122,11 +122,7 @@ The qualification cache is scoped by **prospect + ICP fingerprint**, allowing th
 
 ### Streamlit interface
 
-The current Streamlit interface intentionally keeps the presentation simple. After a workflow completes it displays the number of prospects processed and the result table.
-
-The interface does **not** expose a separate `X réussis / Y erreurs / Z filtrés` reporting dashboard. Errors remain attached to individual workflow results and can be inspected in the result table.
-
-A Gemini `429 RESOURCE_EXHAUSTED` is an API/quota error, not an ICP rejection.
+The Streamlit interface lets the user define an ICP and launch the complete workflow. After processing, it displays the number of prospects processed and a result table containing the available prospect, qualification and error information.
 
 ## Architecture
 
@@ -142,15 +138,12 @@ app/
 ├── enrichment/      # OSINT profile enrichment
 ├── exceptions/      # application exceptions
 ├── pipeline/        # end-to-end orchestration
-├── qualification/  # ICP, LLM qualification and decisions
+├── qualification/   # ICP, LLM qualification and decisions
 ├── repositories/    # persistence access
 ├── scoring/         # hybrid scoring
 ├── ui/              # Streamlit interface
-├── factory.py       # application factories
-└── main.py
+└── factory.py       # application factories
 ```
-
-The former standalone `app/reporting/` layer has been removed because the current product flow does not require a separate reporting subsystem. Result presentation remains part of the Streamlit UI and workflow result mapping.
 
 The project follows Clean Architecture-inspired separation, dependency injection, interface-based infrastructure and single-responsibility components.
 
@@ -256,7 +249,7 @@ The AI qualification stage uses Gemini. Free-tier or project limits can produce:
 429 RESOURCE_EXHAUSTED
 ```
 
-This is an infrastructure/API limitation. It should be counted as an execution error rather than a prospect rejection. See the user guide for troubleshooting.
+This is an infrastructure/API limitation. It should be treated as an execution error rather than a prospect rejection.
 
 ## SearXNG and search quality
 
