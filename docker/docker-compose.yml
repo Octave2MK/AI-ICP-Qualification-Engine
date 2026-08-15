@@ -1,13 +1,10 @@
 services:
 
   searxng:
-
     image: searxng/searxng:latest
-
     container_name: ai_icp_searxng
 
-    # Expose SearXNG only to the local machine.
-    # The container itself still listens on 0.0.0.0 internally.
+    # SearXNG is exposed only to the local machine.
     ports:
       - "127.0.0.1:8080:8080"
 
@@ -15,6 +12,34 @@ services:
       - ./settings.yml:/etc/searxng/settings.yml
 
     environment:
-      - BASE_URL=http://localhost:8080/
+      BASE_URL: http://localhost:8080/
 
     restart: unless-stopped
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: ai_icp_app
+
+    depends_on:
+      - searxng
+
+    ports:
+      - "127.0.0.1:8501:8501"
+
+    environment:
+      SEARCH_PROVIDER: searxng
+      SEARXNG_BASE_URL: http://searxng:8080
+      DATABASE_URL: sqlite:////data/icp.db
+      LLM_PROVIDER: gemini
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+
+    volumes:
+      - icp_data:/data
+
+    restart: unless-stopped
+
+volumes:
+  icp_data:
