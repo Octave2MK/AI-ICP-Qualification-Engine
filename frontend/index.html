@@ -6,71 +6,112 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI ICP Qualification Engine</title>
   <link rel="stylesheet" href="./css/style.css">
+  <!-- Fonts: Inter pour l'interface, Fira Code pour les données -->
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 
 <body>
-  <header>
-    <h1>AI ICP Qualification Engine</h1>
-    <p>Recherche et qualification automatique de prospects B2B.</p>
-  </header>
+  <!-- Animation d'entrée de page -->
+  <div id="page-loader" class="page-loader">
+    <div class="scientific-spinner"></div>
+    <span id="page-loader-status" class="mono-text">Initialisation de l'environnement...</span>
+  </div>
 
-  <main>
-    <form id="icp-form">
-      <h2>Configuration ICP (Ideal Customer Profile)</h2>
+  <div id="app-container" class="app-container hidden">
+    <header class="app-header fade-in">
+      <div class="header-content">
+        <h1>AI ICP Qualification Engine</h1>
+        <p class="subtitle">Moteur de recherche et de qualification automatique B2B</p>
+      </div>
+    </header>
 
-      <label>Métier cible
-        <input name="job_title" value="Business Coach" required>
-      </label>
+    <main class="fade-in slide-up">
+      <section class="panel">
+        <form id="icp-form">
+          <div class="panel-header">
+            <h2>Paramètres d'Extraction ICP</h2>
+            <span class="status-badge">Prêt</span>
+          </div>
 
-      <label>Pays cible
-        <input name="country" value="France" required>
-      </label>
+          <div class="form-grid">
+            <label>
+              <span class="label-text">Métier cible</span>
+              <input type="text" name="job_title" value="Business Coach" required>
+            </label>
 
-      <label>Secteur / domaine
-        <input name="sector" value="Coaching">
-      </label>
+            <label>
+              <span class="label-text">Pays cible</span>
+              <input type="text" name="country" value="France" required>
+            </label>
 
-      <label>Nombre de prospects souhaités
-        <input name="max_prospects" type="number" min="1" max="100" value="20">
-      </label>
+            <label>
+              <span class="label-text">Secteur / Domaine</span>
+              <input type="text" name="sector" value="Coaching">
+            </label>
 
-      <label>Mots-clés obligatoires
-        <input name="required_keywords" placeholder="séparés par des virgules">
-      </label>
+            <label>
+              <span class="label-text">Volume (Max)</span>
+              <input type="number" name="max_prospects" min="1" max="100" value="20" class="mono-text">
+            </label>
 
-      <label>Mots-clés interdits
-        <input name="forbidden_keywords" value="étudiant, stage, stagiaire, student, internship">
-      </label>
+            <label class="full-width">
+              <span class="label-text">Mots-clés obligatoires (Inclusions)</span>
+              <input type="text" name="required_keywords" placeholder="Ex: CEO, Fondateur, Directeur (séparés par des virgules)">
+            </label>
 
-      <button type="submit">Lancer la recherche</button>
-    </form>
+            <label class="full-width">
+              <span class="label-text">Mots-clés interdits (Exclusions)</span>
+              <input type="text" name="forbidden_keywords" value="étudiant, stage, stagiaire, student, internship">
+            </label>
+          </div>
 
-    <p id="cooldown-warning" class="warning" hidden></p>
+          <div class="form-actions">
+            <button type="submit" id="submit-btn">
+              <span class="btn-text">Exécuter la requête</span>
+              <div class="btn-spinner hidden"></div>
+            </button>
+          </div>
+        </form>
+      </section>
 
-    <section id="progress-section" hidden>
-      <progress id="progress-bar" value="0" max="100"></progress>
-      <p id="progress-text"></p>
-    </section>
+      <div id="feedback-container">
+        <div id="cooldown-warning" class="alert alert-warning hidden"></div>
+        <div id="error-message" class="alert alert-error hidden"></div>
+      </div>
 
-    <p id="error-message" class="error" hidden></p>
+      <section id="progress-section" class="panel hidden fade-in">
+        <div class="progress-header">
+          <span class="mono-text">Traitement en cours...</span>
+          <span id="progress-percent" class="mono-text font-bold">0%</span>
+        </div>
+        <div class="progress-track">
+          <div id="progress-bar" class="progress-fill" style="width: 0%"></div>
+        </div>
+        <p id="progress-text" class="mono-text text-muted"></p>
+      </section>
 
-    <section id="results-section" hidden>
-      <h2>Résultats</h2>
-      <p id="results-count"></p>
-      <table id="results-table">
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>LinkedIn</th>
-            <th>Métier</th>
-            <th>Statut</th>
-            <th>Erreur</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-  </main>
+      <section id="results-section" class="panel hidden fade-in">
+        <div class="panel-header">
+          <h2>Ensemble de données</h2>
+          <span id="results-count" class="mono-badge">0 entrées</span>
+        </div>
+        <div class="table-container">
+          <table id="results-table">
+            <thead>
+              <tr>
+                <th>Identité</th>
+                <th>Profil LinkedIn</th>
+                <th>Fonction</th>
+                <th>Statut</th>
+                <th>Log Erreur</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
   <script src="./js/app.js" type="module"></script>
 </body>
 
