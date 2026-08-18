@@ -133,11 +133,20 @@ if st.button("Lancer la recherche"):
                 f"{len(results)} prospects traités"
             )
 
-
             st.subheader("Résultats")
 
             df = results_to_dataframe(results)
-            st.dataframe(df, width="stretch")
+            st.dataframe(
+                df,
+                column_config={
+                    "Profil LinkedIn": st.column_config.LinkColumn(
+                        "Profil LinkedIn",
+                        display_text="Ouvrir le profil",
+                    ),
+                },
+                width="stretch",
+                hide_index=True,
+            )
 
         except Exception:
             progress.empty()
