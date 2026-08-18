@@ -36,7 +36,7 @@ ICPQualificationPipeline
  ↓
 Persistence
  ↓
-Streamlit result table
+API job result / web UI
 ```
 
 ## 2. Dynamic ICP
@@ -76,7 +76,7 @@ The final `- LinkedIn` suffix is removed while legitimate internal hyphens remai
 `EnrichmentFactory` selects the enrichment engine via `settings.ENRICHMENT_ENGINE`:
 
 - `"bs4"` (default): `EnrichmentService` fetches and parses one LinkedIn profile at a time, via `PageFetcher` (requests) and `ProfileExtractor` (BeautifulSoup). `PageFetcher` validates the resolved host against private/loopback/link-local/reserved IP ranges before each request (including after a redirect) and caps response size, to guard against SSRF.
-- `"scrapy"`: `ScrapyBatchEnricher` crawls every acquired LinkedIn URL in one Scrapy run per workflow execution, launched in a dedicated subprocess (`app/enrichment/scrapy_crawler/`). Scrapy's Twisted reactor can only start once per OS process, which is incompatible with the long-lived Streamlit process — hence the subprocess isolation. The crawler applies the same SSRF-style host restriction (`SafeHostDownloaderMiddleware`) and reproduces `ProfileExtractor`'s extraction logic exactly (title as headline, full document text as raw text), so switching engines is behavior-neutral for the qualification stage downstream.
+- `"scrapy"`: `ScrapyBatchEnricher` crawls every acquired LinkedIn URL in one Scrapy run per workflow execution, launched in a dedicated subprocess (`app/enrichment/scrapy_crawler/`). Scrapy's Twisted reactor can only start once per OS process, which is incompatible with the long-lived FastAPI/uvicorn process serving the API — hence the subprocess isolation. The crawler applies the same SSRF-style host restriction (`SafeHostDownloaderMiddleware`) and reproduces `ProfileExtractor`'s extraction logic exactly (title as headline, full document text as raw text), so switching engines is behavior-neutral for the qualification stage downstream.
 
 Both engines produce the same `ProfileData` shape and are consumed identically by `FullICPWorkflow`, which dispatches to a per-prospect loop (`"bs4"`) or a single batch call (`"scrapy"`) based on `isinstance(enricher, BaseBatchEnricher)`. A prospect whose URL fails enrichment — individually in the `"bs4"` loop, or is simply absent from the `"scrapy"` batch result — is recorded as an error entry rather than aborting the whole workflow.
 
@@ -94,17 +94,35 @@ Both engines produce the same `ProfileData` shape and are consumed identically b
 
 For the production workflow, `run_batch()` applies the same preparation and cache checks to all pending profiles and sends the remaining profiles to `QualificationService.qualify_batch()`. The LLM receives one batch request for the pending profiles rather than one request per profile.
 
-## 7. Streamlit
+## 7. API and web interface
 
-`app/ui/streamlit_app.py` builds the dynamic ICP from user input and calls the workflow runner. Results are converted to a dataframe for display.
+`app/api/main.py` is the FastAPI application. It includes `jobs_router` (prefixed `/api`) and mounts `frontend/` as static files at `/` — the API router must be included before the static mount, otherwise the catch-all static handler would shadow `/api/*`.
 
-The current interface displays the number of prospects processed and the resulting table. The table contains the available prospect identity, LinkedIn URL, qualification/scoring fields and execution errors when present.
+The workflow runs as an asynchronous job rather than inline in the HTTP request, because a full run (search + enrichment + qualification) can take several minutes:
+
+```text
+POST /api/jobs
+ ↓ creates a Job row (status="pending"), schedules run_job() as a
+   fastapi.BackgroundTasks task, returns job_id immediately
+ ↓
+run_job() (background thread)
+ ↓ opens its own DB session (never the request's session)
+ ↓ status="running", builds ICP, calls create_full_workflow(db).run(...)
+ ↓ progress_callback commits progress_percent/progress_text after each step
+ ↓
+status="succeeded" (results serialized to JSON on the Job row)
+  or status="failed" (generic error message; full exception logged server-side only)
+```
+
+`GET /api/jobs/{id}` and `GET /api/jobs/{id}/results` read the `Job` row (`app/database/models.py`) via `JobRepository`. A single-instance app with `BackgroundTasks` is sufficient here; a distributed task queue would only be needed if the API ran across multiple worker processes/instances.
+
+`frontend/index.html` + `frontend/js/app.js` build the ICP form, `fetch()` the endpoints above, poll job status, and render the result table — plain JavaScript, no framework, no build step. Because the frontend is served from the same origin as the API, no CORS configuration is required in the default deployment.
 
 ## 8. Persistence
 
 The current local persistence stack is SQLAlchemy + SQLite. Qualification records are scoped to the ICP fingerprint to prevent cross-ICP cache contamination.
 
-SQLAlchemy sessions use `expire_on_commit=False` so ORM objects returned by the workflow remain readable after commits when they are consumed by the Streamlit result layer. Session ownership remains at the workflow/database boundary.
+SQLAlchemy sessions use `expire_on_commit=False` so ORM objects returned by the workflow remain readable after commits when they are consumed by the result-serialization layer. Session ownership remains at the workflow/database boundary; `run_job()`'s background-task session is always distinct from the session used to handle the originating HTTP request.
 
 ## 9. Infrastructure
 

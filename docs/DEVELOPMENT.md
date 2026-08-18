@@ -14,7 +14,7 @@ When modifying the acquisition or qualification pipeline, preserve the dynamic I
 4. Make the smallest compatible implementation change.
 5. Run the focused tests.
 6. Run the full non-integration suite with `uv run pytest -q -m "not integration"` (the plain `uv run pytest -q` also runs the Gemini integration tests and consumes real API quota — only use it deliberately).
-7. Run a real local workflow when the change affects search, enrichment, Gemini, Docker or Streamlit.
+7. Run a real local workflow when the change affects search, enrichment, Gemini, Docker, the API or the frontend.
 8. Only then commit and push.
 
 ## Important contracts

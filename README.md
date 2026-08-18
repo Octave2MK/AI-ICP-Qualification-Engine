@@ -61,9 +61,9 @@ docker compose -f docker/docker-compose.yml up -d --build
 
 Then open:
 
-**http://localhost:8501**
+**http://localhost:8000**
 
-Define your ICP in Streamlit and launch the workflow.
+Define your ICP in the web interface and launch the workflow.
 
 ### Useful Docker commands
 
@@ -109,8 +109,8 @@ docker compose -f docker/docker-compose.yml down -v
 
 ```text
 Browser
-   ↓
-Streamlit :8501
+   ↓ static HTML/CSS/JS + fetch()
+FastAPI :8000  (serves the frontend and the /api/jobs* endpoints)
    ↓ HTTP
 SearXNG :8080
    ↓
@@ -152,8 +152,10 @@ When running the application directly with Python, configure the local SearXNG U
 Run the application:
 
 ```powershell
-uv run streamlit run app/ui/streamlit_app.py
+uv run uvicorn app.api.main:app --port 8000
 ```
+
+Then open **http://localhost:8000**.
 
 ## Why this project?
 
@@ -186,7 +188,7 @@ Hybrid scoring
     ↓
 Persistence
     ↓
-Streamlit results
+Web UI results
 ```
 
 The differentiator is the combination of **ICP-first discovery, search-based OSINT, deterministic filtering and LLM reasoning**, rather than relying exclusively on a static lead database.
@@ -195,7 +197,7 @@ The differentiator is the combination of **ICP-first discovery, search-based OSI
 
 ### Dynamic ICP
 
-The Streamlit interface builds the ICP at runtime. Current acquisition criteria include:
+The web interface builds the ICP at runtime. Current acquisition criteria include:
 
 - target job titles
 - countries
@@ -231,7 +233,7 @@ EnrichmentFactory
 └── "scrapy" — a batch Scrapy crawl per workflow run, in a dedicated subprocess
 ```
 
-The `scrapy` engine crawls every acquired LinkedIn URL in a single run instead of fetching profiles one by one, mirroring the batch approach already used for Gemini qualification. It runs Scrapy in a separate subprocess rather than in-process, because Scrapy's Twisted reactor can only start once per process — incompatible with the long-lived Streamlit process. See [`MIGRATION.md`](MIGRATION.md), partie B, for the full design rationale.
+The `scrapy` engine crawls every acquired LinkedIn URL in a single run instead of fetching profiles one by one, mirroring the batch approach already used for Gemini qualification. It runs Scrapy in a separate subprocess rather than in-process, because Scrapy's Twisted reactor can only start once per process — incompatible with the long-lived FastAPI/uvicorn process serving the API. See [`MIGRATION.md`](MIGRATION.md), partie B, for the full design rationale.
 
 ### Relevance and acquisition pipeline
 
@@ -275,9 +277,19 @@ When several profiles require AI qualification during one workflow, the service 
 
 The qualification cache is scoped by **prospect + ICP fingerprint**, allowing the same prospect to be evaluated independently against different ICPs.
 
-### Streamlit interface
+### API and web interface
 
-The Streamlit interface lets the user define an ICP and launch the complete workflow. After processing, it displays the number of prospects processed and a result table containing the available prospect, qualification and error information.
+`app/api/` is a FastAPI application exposing the workflow as an asynchronous job:
+
+```text
+POST /api/jobs                -> creates a job, returns a job_id immediately
+GET  /api/jobs/{id}            -> status + progress (pending/running/succeeded/failed)
+GET  /api/jobs/{id}/results     -> the prospect results, once succeeded
+```
+
+A job runs in a background task rather than blocking the HTTP request, because the full workflow (search + enrichment + qualification) can take several minutes.
+
+`frontend/` is a static HTML/CSS/JS single-page interface — no framework, no bundler, no build step — served directly by the same FastAPI application at `/`. It lets the user define an ICP, launches a job, polls its progress, and renders the result table once it succeeds.
 
 ## Architecture
 
@@ -286,6 +298,7 @@ The codebase is organized around separated application concerns:
 ```text
 app/
 ├── acquisition/     # search, filtering, URL processing and acquisition
+├── api/             # FastAPI application (jobs endpoints, serves frontend/)
 ├── batch/           # batch processing
 ├── cache/           # application caching
 ├── core/            # settings and logging
@@ -296,8 +309,9 @@ app/
 ├── qualification/   # ICP, LLM qualification and decisions
 ├── repositories/    # persistence access
 ├── scoring/         # hybrid scoring
-├── ui/              # Streamlit interface
 └── factory.py       # application factories
+
+frontend/            # static HTML/CSS/JS web interface (no build step)
 ```
 
 The project follows Clean Architecture-inspired separation, dependency injection, interface-based infrastructure and single-responsibility components.
@@ -372,7 +386,8 @@ The application mitigates operator reliability by generating a plain-text query 
 | Minimum confidence | ✅ |
 | Hybrid scoring | ✅ |
 | SQLite persistence | ✅ |
-| Streamlit workflow | ✅ |
+| FastAPI async job API | ✅ |
+| Static HTML/CSS/JS web interface | ✅ |
 | Automated tests | ✅ |
 | GitHub Actions CI | ✅ |
 | Production hardening | 🚧 |
@@ -386,7 +401,6 @@ The next engineering priorities are production hardening and empirical validatio
 - robust search-provider fallback strategy
 - improved enrichment coverage
 - PostgreSQL production support
-- API layer
 - multi-LLM support
 - observability and monitoring
 - authentication and multi-tenant workspaces
@@ -394,7 +408,7 @@ The next engineering priorities are production hardening and empirical validatio
 ## Documentation
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — technical architecture and component contracts
-- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — installation, Streamlit and troubleshooting
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — installation, usage and troubleshooting
 - [`docs/DOCKER.md`](docs/DOCKER.md) — Docker deployment and end-user setup
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — development workflow, invariants and testing rules
 

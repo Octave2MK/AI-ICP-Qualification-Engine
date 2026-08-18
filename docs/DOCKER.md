@@ -7,7 +7,7 @@ The project can run as two Docker services:
 ```text
 Browser
   ↓
-Streamlit (ai_icp_app :8501)
+FastAPI, serving the static frontend + /api/jobs* (ai_icp_app :8000)
   ↓ HTTP
 SearXNG (ai_icp_searxng :8080)
 ```
@@ -51,7 +51,7 @@ docker compose -f docker/docker-compose.yml up -d --build
 
 The compose file starts:
 
-- `ai_icp_app`: Streamlit application
+- `ai_icp_app`: FastAPI application (serves the static frontend and the `/api/jobs*` endpoints)
 - `ai_icp_searxng`: SearXNG search service
 
 Check status:
@@ -60,10 +60,10 @@ Check status:
 docker compose -f docker/docker-compose.yml ps
 ```
 
-Open Streamlit at:
+Open the application at:
 
 ```text
-http://localhost:8501
+http://localhost:8000
 ```
 
 SearXNG remains available only on the local host at:
@@ -125,6 +125,7 @@ SEARCH_PROVIDER=searxng
 SEARXNG_BASE_URL=http://searxng:8080
 DATABASE_URL=sqlite:////data/icp.db
 LLM_PROVIDER=gemini
+ENRICHMENT_ENGINE=bs4
 ```
 
 The database path is mounted through the `icp_data` named volume.
@@ -145,12 +146,13 @@ The application image installs dependencies with [uv](https://docs.astral.sh/uv/
 
 ## Security boundaries
 
-- Streamlit is bound to `127.0.0.1:8501` by default.
+- The application (FastAPI) is bound to `127.0.0.1:8000` by default.
 - SearXNG is bound to `127.0.0.1:8080` by default. Its example configuration also disables `limiter` and `botdetection` for local development convenience — this is only safe while the port stays bound to `127.0.0.1`; re-enable both before exposing SearXNG beyond localhost.
 - The SearXNG secret is kept in the ignored local `docker/settings.yml` file.
 - The Gemini API key is supplied through the environment and is not baked into the image.
 - The SQLite database is persisted in a Docker-managed volume rather than inside the application image.
 - The application container runs as a dedicated non-root user (`appuser`), not `root`.
-- The application container declares a `HEALTHCHECK` against Streamlit's `/_stcore/health` endpoint.
+- The application container declares a `HEALTHCHECK` against the `/api/health` endpoint.
+- The static frontend and the API are served from the same origin (no CORS is configured); this is only appropriate as long as they continue to be served together.
 
 These bindings are intentionally suitable for local use. They should not be treated as a production internet-facing deployment configuration.

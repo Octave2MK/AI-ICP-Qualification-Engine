@@ -46,11 +46,13 @@ If the connection is refused, inspect the container first:
 docker compose -f docker/docker-compose.yml logs --tail=100 searxng
 ```
 
-## 3. Start Streamlit
+## 3. Start the application
 
 ```powershell
-uv run streamlit run app/ui/streamlit_app.py
+uv run uvicorn app.api.main:app --port 8000
 ```
+
+Open `http://localhost:8000` — FastAPI serves both the `/api/jobs*` endpoints and the static `frontend/` interface at `/`.
 
 The interface lets you define the ICP dynamically:
 
@@ -67,12 +69,12 @@ After the workflow completes, the interface displays the number of prospects pro
 
 ### Relaunch cooldown and session quota
 
-To limit accidental repeated clicks from driving unnecessary Gemini/search cost, the "Lancer la recherche" button enforces a cooldown between runs and a maximum number of runs per browser session:
+To limit accidental repeated clicks from driving unnecessary Gemini/search cost, the "Lancer la recherche" button enforces a cooldown between runs and a maximum number of runs per browser session. This is enforced **client-side**, in `frontend/js/app.js` (reset whenever the page is reloaded), using the same default values also declared in `app/core/settings.py` for backend use:
 
 - `WORKFLOW_COOLDOWN_SECONDS` (default `30`): minimum delay after a run before another one is accepted; a countdown warning is shown if you click again too soon.
-- `MAX_WORKFLOW_RUNS_PER_SESSION` (default `20`): maximum number of workflow runs allowed within one Streamlit session; reload the page to reset the counter.
+- `MAX_WORKFLOW_RUNS_PER_SESSION` (default `20`): maximum number of workflow runs allowed within one page session; reload the page to reset the counter.
 
-Both are configurable in `.env`.
+Changing these in `.env` affects the backend `Settings` values only — the frontend's own constants (`COOLDOWN_SECONDS`/`MAX_RUNS_PER_SESSION` in `frontend/js/app.js`) must be edited directly if you change the defaults, since the static frontend has no build step to inject configuration at deploy time (see `FASTAPI_MIGRATION.md`, "Hors périmètre", for the `GET /api/config` follow-up that would remove this duplication).
 
 ## 4. Reading the result table
 
@@ -113,11 +115,11 @@ This means the API quota or rate limit was exhausted. It is distinct from a pros
 
 Because qualification is batched, one API request can cover several profiles. The exact number of Gemini requests depends on the number of profiles that survive pre-filtering and cache lookup, the batch implementation and any retries or failures.
 
-## 8. Streamlit / SQLAlchemy session handling
+## 8. API / SQLAlchemy session handling
 
-The application uses SQLAlchemy sessions with `expire_on_commit=False`. This keeps ORM attributes available after commits when workflow results are consumed by the Streamlit layer.
+The application uses SQLAlchemy sessions with `expire_on_commit=False`. This keeps ORM attributes available after commits when workflow results are consumed and serialized by `app/api/job_service.py`.
 
-The workflow/database boundary remains responsible for session ownership. The Streamlit layer should not create ad-hoc replacement sessions to work around ORM lifecycle errors.
+The workflow/database boundary remains responsible for session ownership. `run_job()` (the background task that executes a job) always opens its own session via `SessionLocal()` — never the session used to handle the HTTP request that created the job, since that request's session is already closed by the time the background task runs.
 
 If an error such as the following appears:
 
