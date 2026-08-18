@@ -125,27 +125,21 @@ For the complete Docker reference, see [`docs/DOCKER.md`](docs/DOCKER.md).
 
 ## Developer setup
 
-Python is required only when developing or testing the application outside Docker.
+Python is required only when developing or testing the application outside Docker. Dependencies are managed with [uv](https://docs.astral.sh/uv/).
 
 Requirements:
 
-- Python 3.13
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (installs and manages Python 3.13 for you)
 - Docker Desktop for local SearXNG when running the application directly from Python
 - Gemini API key for AI qualification
 
-Create and activate a virtual environment on Windows:
+Install dependencies and create the virtual environment:
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
+uv sync
 ```
 
-Install dependencies:
-
-```powershell
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-```
+This creates `.venv` and installs both runtime and development dependencies from `uv.lock`.
 
 Create `.env`:
 
@@ -158,7 +152,7 @@ When running the application directly with Python, configure the local SearXNG U
 Run the application:
 
 ```powershell
-streamlit run app/ui/streamlit_app.py
+uv run streamlit run app/ui/streamlit_app.py
 ```
 
 ## Why this project?
@@ -226,6 +220,18 @@ SearchProvider
 ```
 
 SearXNG is an external local metasearch service. The application talks to it over HTTP. Because upstream engines do not necessarily handle search operators consistently, `QueryGenerator` also produces a plain-text query variant that does not depend on `site:`.
+
+### OSINT enrichment engines
+
+Enrichment is behind an `ENRICHMENT_ENGINE` setting:
+
+```text
+EnrichmentFactory
+├── "bs4"    (default) — requests + BeautifulSoup, one profile fetched at a time
+└── "scrapy" — a batch Scrapy crawl per workflow run, in a dedicated subprocess
+```
+
+The `scrapy` engine crawls every acquired LinkedIn URL in a single run instead of fetching profiles one by one, mirroring the batch approach already used for Gemini qualification. It runs Scrapy in a separate subprocess rather than in-process, because Scrapy's Twisted reactor can only start once per process — incompatible with the long-lived Streamlit process. See [`MIGRATION.md`](MIGRATION.md), partie B, for the full design rationale.
 
 ### Relevance and acquisition pipeline
 
@@ -306,19 +312,21 @@ For development conventions and safe-change workflow, see [`docs/DEVELOPMENT.md`
 
 ## Testing
 
-Run the full suite:
+Run the CI-equivalent non-integration suite (recommended default for day-to-day development):
 
 ```powershell
-pytest -q
+uv run pytest -q -m "not integration"
 ```
 
-Run the CI-equivalent non-integration suite:
+Run the full suite, including integration tests:
 
 ```powershell
-pytest -q -m "not integration"
+uv run pytest -q
 ```
 
-Integration tests are marked in `pytest.ini` and are intentionally excluded from the default GitHub Actions test command because they can require external services, credentials or quotas.
+**Warning:** the full suite hits the real Gemini API (`tests/integration/`) and consumes real quota/cost if `GEMINI_API_KEY` is set in `.env`. Prefer the non-integration command above unless you specifically intend to exercise the Gemini integration tests.
+
+Integration tests are marked via the `integration` marker declared in `pyproject.toml` (`[tool.pytest.ini_options]`) and are intentionally excluded from the default GitHub Actions test command because they can require external services, credentials or quotas.
 
 GitHub Actions is configured in `.github/workflows/tests.yml` for pushes and pull requests targeting `main`.
 

@@ -2,17 +2,14 @@
 
 ## Prerequisites
 
-- Python 3.13
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (installs and manages Python 3.13 for you)
 - A Gemini API key for AI qualification
 - Docker Desktop if SearXNG is used locally
 
 ## 1. Install
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+uv sync
 ```
 
 Create `.env` from `.env.example` and configure the LLM and database settings.
@@ -52,7 +49,7 @@ docker compose -f docker/docker-compose.yml logs --tail=100 searxng
 ## 3. Start Streamlit
 
 ```powershell
-streamlit run app/ui/streamlit_app.py
+uv run streamlit run app/ui/streamlit_app.py
 ```
 
 The interface lets you define the ICP dynamically:
@@ -67,6 +64,15 @@ The interface lets you define the ICP dynamically:
 Multiple keyword values are entered as comma-separated values.
 
 After the workflow completes, the interface displays the number of prospects processed and the result table.
+
+### Relaunch cooldown and session quota
+
+To limit accidental repeated clicks from driving unnecessary Gemini/search cost, the "Lancer la recherche" button enforces a cooldown between runs and a maximum number of runs per browser session:
+
+- `WORKFLOW_COOLDOWN_SECONDS` (default `30`): minimum delay after a run before another one is accepted; a countdown warning is shown if you click again too soon.
+- `MAX_WORKFLOW_RUNS_PER_SESSION` (default `20`): maximum number of workflow runs allowed within one Streamlit session; reload the page to reset the counter.
+
+Both are configurable in `.env`.
 
 ## 4. Reading the result table
 
@@ -123,16 +129,18 @@ verify that the current repository version is installed and that the workflow ha
 
 ## 9. Development test suite
 
-Run all tests:
+Run only non-integration tests, as CI does (recommended default):
 
 ```powershell
-pytest -q
+uv run pytest -q -m "not integration"
 ```
 
-Run only non-integration tests, as CI does:
+Run all tests, including the Gemini integration tests:
 
 ```powershell
-pytest -q -m "not integration"
+uv run pytest -q
 ```
+
+**Warning:** the full suite hits the real Gemini API and consumes real quota/cost if `GEMINI_API_KEY` is set in `.env`. Prefer the non-integration command above for routine development.
 
 The integration marker is defined in the pytest configuration and external-service tests should be treated separately from deterministic unit tests.

@@ -141,12 +141,16 @@ The same application image is then built locally from the repository. The user d
 
 The first build requires internet access to download the Python base image and Python packages. Runtime search traffic goes from the application container to the SearXNG container and from SearXNG to its configured upstream search engines.
 
+The application image installs dependencies with [uv](https://docs.astral.sh/uv/) from the committed `uv.lock` (`uv sync --frozen`), so the exact dependency versions used in the image match what `uv sync` installs locally.
+
 ## Security boundaries
 
 - Streamlit is bound to `127.0.0.1:8501` by default.
-- SearXNG is bound to `127.0.0.1:8080` by default.
+- SearXNG is bound to `127.0.0.1:8080` by default. Its example configuration also disables `limiter` and `botdetection` for local development convenience — this is only safe while the port stays bound to `127.0.0.1`; re-enable both before exposing SearXNG beyond localhost.
 - The SearXNG secret is kept in the ignored local `docker/settings.yml` file.
 - The Gemini API key is supplied through the environment and is not baked into the image.
 - The SQLite database is persisted in a Docker-managed volume rather than inside the application image.
+- The application container runs as a dedicated non-root user (`appuser`), not `root`.
+- The application container declares a `HEALTHCHECK` against Streamlit's `/_stcore/health` endpoint.
 
 These bindings are intentionally suitable for local use. They should not be treated as a production internet-facing deployment configuration.

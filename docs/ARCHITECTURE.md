@@ -71,7 +71,16 @@ Pascal BENVENISTE - Business Coach. Accompagnement des dirigeants - LinkedIn
 
 The final `- LinkedIn` suffix is removed while legitimate internal hyphens remain part of the job title.
 
-## 5. Qualification
+## 5. OSINT enrichment
+
+`EnrichmentFactory` selects the enrichment engine via `settings.ENRICHMENT_ENGINE`:
+
+- `"bs4"` (default): `EnrichmentService` fetches and parses one LinkedIn profile at a time, via `PageFetcher` (requests) and `ProfileExtractor` (BeautifulSoup). `PageFetcher` validates the resolved host against private/loopback/link-local/reserved IP ranges before each request (including after a redirect) and caps response size, to guard against SSRF.
+- `"scrapy"`: `ScrapyBatchEnricher` crawls every acquired LinkedIn URL in one Scrapy run per workflow execution, launched in a dedicated subprocess (`app/enrichment/scrapy_crawler/`). Scrapy's Twisted reactor can only start once per OS process, which is incompatible with the long-lived Streamlit process — hence the subprocess isolation. The crawler applies the same SSRF-style host restriction (`SafeHostDownloaderMiddleware`) and reproduces `ProfileExtractor`'s extraction logic exactly (title as headline, full document text as raw text), so switching engines is behavior-neutral for the qualification stage downstream.
+
+Both engines produce the same `ProfileData` shape and are consumed identically by `FullICPWorkflow`, which dispatches to a per-prospect loop (`"bs4"`) or a single batch call (`"scrapy"`) based on `isinstance(enricher, BaseBatchEnricher)`. A prospect whose URL fails enrichment — individually in the `"bs4"` loop, or is simply absent from the `"scrapy"` batch result — is recorded as an error entry rather than aborting the whole workflow.
+
+## 6. Qualification
 
 `ICPQualificationPipeline.run()` applies the following order:
 
@@ -85,25 +94,25 @@ The final `- LinkedIn` suffix is removed while legitimate internal hyphens remai
 
 For the production workflow, `run_batch()` applies the same preparation and cache checks to all pending profiles and sends the remaining profiles to `QualificationService.qualify_batch()`. The LLM receives one batch request for the pending profiles rather than one request per profile.
 
-## 6. Streamlit
+## 7. Streamlit
 
 `app/ui/streamlit_app.py` builds the dynamic ICP from user input and calls the workflow runner. Results are converted to a dataframe for display.
 
 The current interface displays the number of prospects processed and the resulting table. The table contains the available prospect identity, LinkedIn URL, qualification/scoring fields and execution errors when present.
 
-## 7. Persistence
+## 8. Persistence
 
 The current local persistence stack is SQLAlchemy + SQLite. Qualification records are scoped to the ICP fingerprint to prevent cross-ICP cache contamination.
 
 SQLAlchemy sessions use `expire_on_commit=False` so ORM objects returned by the workflow remain readable after commits when they are consumed by the Streamlit result layer. Session ownership remains at the workflow/database boundary.
 
-## 8. Infrastructure
+## 9. Infrastructure
 
 SearXNG is provided through Docker Compose. The current compose configuration binds the host port to `127.0.0.1:8080`, keeping the local SearXNG API inaccessible from other network interfaces by default.
 
 The SearXNG container itself listens internally on its container interface; the host exposure is what is restricted.
 
-## 9. Testing and CI
+## 10. Testing and CI
 
 The repository has an automated pytest suite and a GitHub Actions workflow at `.github/workflows/tests.yml`. CI runs Python 3.13, installs runtime and development dependencies, and executes the non-integration test suite.
 
