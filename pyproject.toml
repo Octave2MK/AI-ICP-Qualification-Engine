@@ -11,21 +11,16 @@ dependencies = [
     "google-genai==2.16.0",
     "lxml==6.1.1",
     "openpyxl==3.1.5",
-    "pandas==3.0.5",
     "python-dotenv==1.2.2",
     "requests==2.34.2",
     "SQLAlchemy==2.0.52",
-    "streamlit==1.60.0",
     "scrapy>=2.17.0",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.3",
 ]
 
 [dependency-groups]
-dev = [
-    "mypy>=2.3.1",
-    "pytest==9.1.1",
-    "pytest-cov>=7.1.0",
-    "ruff>=0.16.3",
-]
+dev = ["mypy>=2.3.1", "pytest==9.1.1", "pytest-cov>=7.1.0", "ruff>=0.16.3"]
 
 [tool.ruff]
 line-length = 100
@@ -42,8 +37,6 @@ select = ["E", "F"]
 # Tests frequently interleave `import` statements with fixtures/test
 # functions as the suite grew; not a correctness issue.
 "tests/*" = ["E402"]
-# sys.path must be extended before importing app.* modules here.
-"app/ui/streamlit_app.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -61,7 +54,7 @@ module = "app.database.models"
 disable_error_code = ["valid-type", "misc"]
 
 [[tool.mypy.overrides]]
-module = ["app.repositories.*"]
+module = ["app.repositories.*", "app.api.jobs_router"]
 disable_error_code = ["arg-type"]
 
 [tool.pytest.ini_options]

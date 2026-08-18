@@ -19,9 +19,9 @@ class ScrapyBatchEnricher(BaseBatchEnricher):
 
     Le sous-processus est indispensable : le reactor Twisted sur lequel
     Scrapy s'appuie ne peut démarrer qu'une seule fois par processus, ce qui
-    est incompatible avec le processus Streamlit long-vivant qui ré-exécute
-    ce module à chaque interaction utilisateur (voir MIGRATION.md, partie
-    B.0). Chaque sous-processus obtient son propre reactor frais."""
+    est incompatible avec le processus FastAPI/uvicorn long-vivant qui sert
+    l'API (voir MIGRATION.md, partie B.0). Chaque sous-processus obtient son
+    propre reactor frais."""
 
     DEFAULT_TIMEOUT_SECONDS = 300
 

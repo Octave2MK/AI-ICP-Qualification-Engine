@@ -26,7 +26,7 @@ services:
       - searxng
 
     ports:
-      - "127.0.0.1:8501:8501"
+      - "127.0.0.1:8000:8000"
 
     environment:
       SEARCH_PROVIDER: searxng
@@ -35,6 +35,7 @@ services:
       LLM_PROVIDER: gemini
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      ENRICHMENT_ENGINE: ${ENRICHMENT_ENGINE:-bs4}
 
     volumes:
       - icp_data:/data
