@@ -41,7 +41,6 @@ def test_parse_valid_json():
 
 import pytest
 
-from app.qualification.parsers.json_parser import JsonParser
 from app.qualification.exceptions import InvalidQualificationError
 
 

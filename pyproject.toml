@@ -1,0 +1,71 @@
+[project]
+name = "ai-icp-qualification-engine"
+version = "0.1.0"
+description = "ICP-driven B2B prospect sourcing, OSINT enrichment and AI qualification engine."
+requires-python = ">=3.13"
+dependencies = [
+    "ddgs",
+    "httpx",
+    "beautifulsoup4==4.15.0",
+    "google-auth==2.56.2",
+    "google-genai==2.16.0",
+    "lxml==6.1.1",
+    "openpyxl==3.1.5",
+    "pandas==3.0.5",
+    "python-dotenv==1.2.2",
+    "requests==2.34.2",
+    "SQLAlchemy==2.0.52",
+    "streamlit==1.60.0",
+    "scrapy>=2.17.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pytest==9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.3",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+# "I" (isort) is intentionally excluded: this codebase consistently uses a
+# blank-line-per-import style that isort would rewrite wholesale for no
+# functional benefit. E/F catch real correctness issues (unused imports/
+# variables, undefined names, line length) without fighting that style.
+select = ["E", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests frequently interleave `import` statements with fixtures/test
+# functions as the suite grew; not a correctness issue.
+"tests/*" = ["E402"]
+# sys.path must be extended before importing app.* modules here.
+"app/ui/streamlit_app.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+exclude = ["tests/"]
+
+# The models use classic `declarative_base()` rather than the newer
+# `Mapped[]`-annotated declarative style, which mypy cannot type-check
+# precisely without a plugin. These are known false positives, not real
+# bugs; migrating to `Mapped[]` columns is a separate, larger change.
+[[tool.mypy.overrides]]
+module = "app.database.models"
+disable_error_code = ["valid-type", "misc"]
+
+[[tool.mypy.overrides]]
+module = ["app.repositories.*"]
+disable_error_code = ["arg-type"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=app --cov-report=term-missing"
+markers = [
+    "integration: tests that require external services or real integrations",
+]

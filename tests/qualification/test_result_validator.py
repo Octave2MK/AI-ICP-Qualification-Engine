@@ -22,9 +22,7 @@ def test_valid_result_passes():
 
 import pytest
 
-from app.qualification.dto import QualificationResult
 from app.qualification.exceptions import InvalidQualificationError
-from app.qualification.validators.result_validator import ResultValidator
 
 
 def test_confidence_must_be_between_zero_and_one():
@@ -41,11 +39,7 @@ def test_confidence_must_be_between_zero_and_one():
     with pytest.raises(InvalidQualificationError):
         validator.validate(result)
 
-import pytest
 
-from app.qualification.dto import QualificationResult
-from app.qualification.exceptions import InvalidQualificationError
-from app.qualification.validators.result_validator import ResultValidator
 
 
 def test_profession_cannot_be_empty():
@@ -61,11 +55,7 @@ def test_profession_cannot_be_empty():
     with pytest.raises(InvalidQualificationError):
         validator.validate(result)
 
-import pytest
 
-from app.qualification.dto import QualificationResult
-from app.qualification.exceptions import InvalidQualificationError
-from app.qualification.validators.result_validator import ResultValidator
 
 
 def test_sector_cannot_be_empty():
@@ -81,11 +71,7 @@ def test_sector_cannot_be_empty():
     with pytest.raises(InvalidQualificationError):
         validator.validate(result)
 
-import pytest
 
-from app.qualification.dto import QualificationResult
-from app.qualification.exceptions import InvalidQualificationError
-from app.qualification.validators.result_validator import ResultValidator
 
 
 def test_evidence_required_when_icp_match():

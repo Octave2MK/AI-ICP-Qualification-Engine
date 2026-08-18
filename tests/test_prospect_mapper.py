@@ -37,7 +37,7 @@ def test_map_extracts_job_title_before_pipe():
 
     candidate = ProspectCandidate(
         url="https://linkedin.com/in/eric-mallet",
-        title="Eric Mallet - Executive Business Coach | J'accompagne dirigeants et managers - LinkedIn",
+        title="Eric Mallet - Executive Business Coach | J'accompagne dirigeants et managers - LinkedIn",  # noqa: E501
     )
 
     prospect = mapper.map(candidate)

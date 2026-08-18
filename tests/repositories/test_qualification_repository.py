@@ -1,4 +1,4 @@
-from app.database.models import Prospect, Qualification
+from app.database.models import Prospect
 from app.repositories.qualification_repository import QualificationRepository
 from app.qualification.dto import QualificationResult
 
