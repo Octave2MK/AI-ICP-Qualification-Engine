@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database.database import Base
 
@@ -135,3 +135,19 @@ class Qualification(Base):
     exclusion_reason = Column(
         String
     )
+
+
+class Job(Base):
+    """Un job de workflow asynchrone déclenché via l'API (app/api/)."""
+
+    __tablename__ = "jobs"
+
+    id = Column(String, primary_key=True)
+    status = Column(String, nullable=False, default="pending")
+    progress_percent = Column(Integer, default=0)
+    progress_text = Column(String, default="")
+    icp_json = Column(String, nullable=False)
+    results_json = Column(String, nullable=True)
+    error = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+    finished_at = Column(DateTime, nullable=True)
