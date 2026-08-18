@@ -23,7 +23,7 @@ def test_results_table_contains_only_requested_columns():
         ]
     )
 
-    assert list(dataframe.columns) == ["Nom", "LinkedIn", "Métier", "Erreur"]
+    assert list(dataframe.columns) == ["Prospect", "Profil LinkedIn", "Métier", "Erreur"]
     assert dataframe.iloc[0]["Métier"] == "Business Coach"
     assert dataframe.iloc[1]["Erreur"] == "Gemini quota exceeded"
 

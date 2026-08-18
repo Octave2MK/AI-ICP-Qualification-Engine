@@ -33,7 +33,7 @@ services:
       SEARXNG_BASE_URL: http://searxng:8080
       DATABASE_URL: sqlite:////data/icp.db
       LLM_PROVIDER: gemini
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-AQ.Ab8RN6IDZOafJzgkwGYWKlXFrDJIDRZI1jdUkOtcKwTk8tTnTw}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
 
     volumes:
