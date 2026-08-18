@@ -1,6 +1,9 @@
+import pytest
+
 from app.database.models import Prospect, Qualification
 from app.enrichment.dto import ProfileData
 from app.pipeline.icp_pipeline import ICPQualificationPipeline
+from app.qualification.exceptions import InvalidQualificationError
 from app.repositories.qualification_repository import QualificationRepository
 from app.qualification.service import QualificationService
 from app.qualification.llm.fake_llm import FakeLLM
@@ -10,9 +13,9 @@ from app.qualification.validators.result_validator import ResultValidator
 from app.qualification.icp.icp_definition import ICPDefinition
 
 
-def create_pipeline():
+def create_pipeline(llm=None):
     service = QualificationService(
-        llm=FakeLLM(),
+        llm=llm or FakeLLM(),
         prompt_builder=PromptBuilder(),
         parser=JsonParser(),
         validator=ResultValidator(),
@@ -172,6 +175,91 @@ def test_qualification_cache_is_isolated_by_icp(db_session):
 
     assert repeated["cached"] is True
     assert db_session.query(Qualification).count() == 2
+
+
+def test_pipeline_marks_low_confidence_profile_for_review(db_session):
+    low_confidence_llm = FakeLLM(
+        response={
+            "profession": "Business Coach",
+            "sector": "Consulting",
+            "target_market": "B2B",
+            "offer_detected": True,
+            "authority_signals": [],
+            "content_signals": [],
+            "commercial_signals": [],
+            "icp_match": True,
+            "confidence": 0.5,
+            "evidence": ["Mentions coaching"],
+            "exclusion_reason": None,
+        }
+    )
+    pipeline = create_pipeline(llm=low_confidence_llm)
+
+    prospect = Prospect(
+        fullname="Jean Dupont",
+        linkedin_url="https://linkedin.com/in/low-confidence",
+        country="France",
+        job_title="Business Coach",
+        followers=100,
+    )
+
+    db_session.add(prospect)
+    db_session.commit()
+    db_session.refresh(prospect)
+
+    profile = ProfileData(
+        linkedin_url="https://linkedin.com/in/low-confidence",
+        name="Jean Dupont",
+        headline="Business Coach",
+        about="",
+        raw_text="",
+        clean_text="Business coach",
+    )
+
+    icp = ICPDefinition(
+        professions=["Business Coach"],
+        target_markets=["France"],
+        minimum_confidence=0.85,
+    )
+
+    result = pipeline.run(db_session, prospect, profile, icp)
+
+    assert result["decision"].status == "REVIEW"
+    assert result["decision"].priority == "MEDIUM"
+
+
+def test_pipeline_propagates_error_on_malformed_llm_response(db_session):
+    broken_llm = FakeLLM(response="this is not valid JSON")
+    pipeline = create_pipeline(llm=broken_llm)
+
+    prospect = Prospect(
+        fullname="Jean Dupont",
+        linkedin_url="https://linkedin.com/in/broken-response",
+        country="France",
+        job_title="Business Coach",
+        followers=100,
+    )
+
+    db_session.add(prospect)
+    db_session.commit()
+    db_session.refresh(prospect)
+
+    profile = ProfileData(
+        linkedin_url="https://linkedin.com/in/broken-response",
+        name="Jean Dupont",
+        headline="Business Coach",
+        about="",
+        raw_text="",
+        clean_text="Business coach",
+    )
+
+    icp = ICPDefinition(
+        professions=["Business Coach"],
+        target_markets=["France"],
+    )
+
+    with pytest.raises(InvalidQualificationError):
+        pipeline.run(db_session, prospect, profile, icp)
 
 
 def test_icp_fingerprint_is_deterministic():
