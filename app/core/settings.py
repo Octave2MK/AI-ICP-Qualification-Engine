@@ -78,4 +78,26 @@ class Settings:
         repr=False,
     )
 
+    WORKFLOW_COOLDOWN_SECONDS: float = float(
+        os.getenv(
+            "WORKFLOW_COOLDOWN_SECONDS",
+            "30",
+        )
+    )
+
+    MAX_WORKFLOW_RUNS_PER_SESSION: int = int(
+        os.getenv(
+            "MAX_WORKFLOW_RUNS_PER_SESSION",
+            "20",
+        )
+    )
+
+    # "bs4": legacy per-URL requests+BeautifulSoup engine (default, no
+    # behavior change). "scrapy": batch engine, one crawl per workflow run
+    # via a dedicated subprocess. See MIGRATION.md, partie B.
+    ENRICHMENT_ENGINE: str = os.getenv(
+        "ENRICHMENT_ENGINE",
+        "bs4",
+    )
+
 settings = Settings()

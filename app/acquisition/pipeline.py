@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from app.acquisition.acquisition_models import (
     ICP,
     ProspectCandidate,
@@ -145,15 +147,21 @@ class AcquisitionPipeline:
 
     @staticmethod
     def _is_linkedin_profile(url: str) -> bool:
-        """Return True only for public LinkedIn profile URLs."""
+        """Return True only for public LinkedIn profile URLs. Validates the
+        actual host (linkedin.com or a subdomain, e.g. fr.linkedin.com)
+        rather than a substring match, so a spoofed host embedding
+        "linkedin.com/in/" in its path cannot be treated as a profile URL."""
         if not url:
             return False
 
-        normalized = url.strip().lower()
-        return (
-            "linkedin.com/in/" in normalized
-            and "linkedin.com/company/" not in normalized
+        parsed = urlparse(url.strip())
+        hostname = (parsed.hostname or "").lower()
+        is_linkedin_host = (
+            hostname == URLExtractor.ROOT_HOST
+            or hostname.endswith("." + URLExtractor.ROOT_HOST)
         )
+
+        return is_linkedin_host and URLExtractor.PROFILE_PATH_PREFIX in parsed.path
 
     def run_and_map(self, icp: ICP):
         candidates = self.run(icp)

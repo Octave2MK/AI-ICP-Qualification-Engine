@@ -1,3 +1,7 @@
+# WARNING: limiter and botdetection are disabled below for local development
+# convenience. This is only safe as long as the SearXNG host port stays bound
+# to 127.0.0.1 (the default in docker/docker-compose.yml). Re-enable both
+# before exposing this instance beyond localhost.
 use_default_settings: true
 
 server:

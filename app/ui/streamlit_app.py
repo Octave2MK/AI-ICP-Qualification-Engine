@@ -1,4 +1,5 @@
 import sys
+import time
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -8,8 +9,13 @@ if str(ROOT_DIR) not in sys.path:
 import streamlit as st
 
 from app.acquisition.acquisition_models import ICP
+from app.core.logging import get_logger, setup_logging
+from app.core.settings import settings
 from app.ui.workflow_runner import run_workflow
 from app.ui.prospect_view import results_to_dataframe
+
+setup_logging()
+logger = get_logger(__name__)
 
 
 st.set_page_config(
@@ -61,53 +67,82 @@ forbidden_keywords_text = st.text_input(
     help="Les profils contenant ces termes seront exclus.",
 )
 
+if "workflow_run_count" not in st.session_state:
+    st.session_state.workflow_run_count = 0
+
+if "last_workflow_run_at" not in st.session_state:
+    st.session_state.last_workflow_run_at = 0.0
+
 if st.button("Lancer la recherche"):
-    required_keywords = [
-        item.strip()
-        for item in required_keywords_text.split(",")
-        if item.strip()
-    ]
+    now = time.time()
+    elapsed_since_last_run = now - st.session_state.last_workflow_run_at
+    remaining_cooldown = settings.WORKFLOW_COOLDOWN_SECONDS - elapsed_since_last_run
 
-    forbidden_keywords = [
-        item.strip()
-        for item in forbidden_keywords_text.split(",")
-        if item.strip()
-    ]
-
-    icp = ICP(
-        job_titles=[job_title.strip()] if job_title.strip() else [],
-        countries=[country.strip()] if country.strip() else [],
-        sectors=[sector.strip()] if sector.strip() else [],
-        keywords=required_keywords,
-        required_keywords=required_keywords,
-        forbidden_keywords=forbidden_keywords,
-        max_prospects=int(max_prospects),
-    )
-
-    progress = st.progress(0, text="Initialisation...")
-
-    def update_progress(percent, text):
-        progress.progress(percent, text=text)
-
-    try:
-        results = run_workflow(
-            icp,
-            progress_callback=update_progress,
+    if remaining_cooldown > 0:
+        st.warning(
+            "Veuillez patienter encore "
+            f"{remaining_cooldown:.0f} s avant de relancer une recherche."
         )
-        st.session_state.results = results
+    elif st.session_state.workflow_run_count >= settings.MAX_WORKFLOW_RUNS_PER_SESSION:
+        st.warning(
+            "Nombre maximal de recherches atteint pour cette session "
+            f"({settings.MAX_WORKFLOW_RUNS_PER_SESSION}). "
+            "Rechargez la page pour réinitialiser."
+        )
+    else:
+        st.session_state.last_workflow_run_at = now
+        st.session_state.workflow_run_count += 1
 
-        progress.empty()
+        required_keywords = [
+            item.strip()
+            for item in required_keywords_text.split(",")
+            if item.strip()
+        ]
 
-        st.success(
-            f"{len(results)} prospects traités"
+        forbidden_keywords = [
+            item.strip()
+            for item in forbidden_keywords_text.split(",")
+            if item.strip()
+        ]
+
+        icp = ICP(
+            job_titles=[job_title.strip()] if job_title.strip() else [],
+            countries=[country.strip()] if country.strip() else [],
+            sectors=[sector.strip()] if sector.strip() else [],
+            keywords=required_keywords,
+            required_keywords=required_keywords,
+            forbidden_keywords=forbidden_keywords,
+            max_prospects=int(max_prospects),
         )
 
+        progress = st.progress(0, text="Initialisation...")
 
-        st.subheader("Résultats")
+        def update_progress(percent, text):
+            progress.progress(percent, text=text)
 
-        df = results_to_dataframe(results)
-        st.dataframe(df, width="stretch")
+        try:
+            results = run_workflow(
+                icp,
+                progress_callback=update_progress,
+            )
+            st.session_state.results = results
 
-    except Exception as exc:
-        progress.empty()
-        st.error(f"Erreur pendant le workflow : {exc}")
+            progress.empty()
+
+            st.success(
+                f"{len(results)} prospects traités"
+            )
+
+
+            st.subheader("Résultats")
+
+            df = results_to_dataframe(results)
+            st.dataframe(df, width="stretch")
+
+        except Exception:
+            progress.empty()
+            logger.exception("Le workflow a échoué pendant l'exécution.")
+            st.error(
+                "Une erreur est survenue pendant le traitement. "
+                "Consultez les journaux serveur pour plus de détails."
+            )

@@ -1,4 +1,5 @@
 from app.core.settings import settings
+from app.exceptions.configuration_error import ConfigurationError
 from app.qualification.llm.fake_llm import FakeLLM
 from app.qualification.llm.gemini_client import GeminiClient
 
@@ -20,6 +21,11 @@ class LLMFactory:
             return FakeLLM()
 
         if provider == "gemini":
+            if not settings.GEMINI_API_KEY:
+                raise ConfigurationError(
+                    "GEMINI_API_KEY is not configured. Set it in .env "
+                    "before using LLM_PROVIDER=gemini."
+                )
             return GeminiClient(
                 api_key=settings.GEMINI_API_KEY,
                 model=settings.GEMINI_MODEL,
