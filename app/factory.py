@@ -10,24 +10,8 @@ from app.repositories.prospect_repository import (
 )
 
 
-from app.enrichment.enrichment_service import (
-    EnrichmentService,
-)
-
-from app.enrichment.osint_enricher import (
-    OSINTEnricher,
-)
-
-from app.enrichment.page_fetcher import (
-    PageFetcher,
-)
-
-from app.enrichment.profile_extractor import (
-    ProfileExtractor,
-)
-
-from app.enrichment.text_cleaner import (
-    TextCleaner,
+from app.enrichment.enrichment_factory import (
+    EnrichmentFactory,
 )
 
 
@@ -82,19 +66,7 @@ def create_full_workflow(db):
     # Enrichment OSINT
     # ==========================
 
-    enrichment_service = (
-        EnrichmentService(
-            fetcher=PageFetcher(),
-            extractor=ProfileExtractor(),
-            cleaner=TextCleaner(),
-        )
-    )
-
-    osint_enricher = (
-        OSINTEnricher(
-            enrichment_service
-        )
-    )
+    osint_enricher = EnrichmentFactory.create()
 
     # ==========================
     # Qualification
