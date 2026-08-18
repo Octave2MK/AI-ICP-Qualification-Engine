@@ -1,7 +1,9 @@
 import re
 
+from app.enrichment.interfaces.cleaner import BaseCleaner
 
-class TextCleaner:
+
+class TextCleaner(BaseCleaner):
     """Nettoie le texte extrait d'une page."""
 
     URL_PATTERN = re.compile(r"https?://\S+|www\.\S+")

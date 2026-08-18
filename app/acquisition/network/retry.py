@@ -14,7 +14,7 @@ def retry(
         @wraps(func)
         def wrapper(*args, **kwargs):
 
-            last_exception = None
+            last_exception: Exception | None = None
 
             for attempt in range(attempts):
                 try:
@@ -26,6 +26,8 @@ def retry(
                         time.sleep(
                             delay * (attempt + 1)
                         )
+
+            assert last_exception is not None
             raise last_exception
         return wrapper
     return decorator

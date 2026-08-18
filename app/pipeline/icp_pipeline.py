@@ -5,6 +5,9 @@ from app.qualification.decision.decision_engine import DecisionEngine
 from app.scoring.hybrid_scoring import HybridScoringEngine
 from app.qualification.icp.icp_definition import ICPDefinition
 from app.qualification.pre_filter import ICPPreFilter
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ICPQualificationPipeline:
@@ -45,6 +48,12 @@ class ICPQualificationPipeline:
                 results[index] = prepared
 
         if pending:
+            logger.info(
+                "Qualifying %d pending profile(s) via LLM batch "
+                "(%d already resolved from exclusion/pre-filter/cache).",
+                len(pending),
+                len(items) - len(pending),
+            )
             qualifications = self._qualification_service.qualify_batch(
                 [profile for _, _, profile in pending],
                 icp,
@@ -72,6 +81,11 @@ class ICPQualificationPipeline:
     def _prepare(self, db, prospect, profile, icp):
         exclusion = ExclusionEngine.check(profile)
         if exclusion["excluded"]:
+            logger.info(
+                "Prospect %s excluded before qualification: %s",
+                getattr(prospect, "id", None),
+                exclusion["reason"],
+            )
             return {
                 "status": "EXCLUDED",
                 "reason": exclusion["reason"],
@@ -79,6 +93,10 @@ class ICPQualificationPipeline:
             }
 
         if not ICPPreFilter.match(profile, icp):
+            logger.info(
+                "Prospect %s filtered out by ICP pre-filter.",
+                getattr(prospect, "id", None),
+            )
             return {
                 "status": "FILTERED",
                 "decision": "REJECT",
@@ -92,6 +110,11 @@ class ICPQualificationPipeline:
             icp.fingerprint(),
         )
         if cached:
+            logger.info(
+                "Qualification cache hit for prospect %s (ICP fingerprint %s).",
+                getattr(prospect, "id", None),
+                icp.fingerprint(),
+            )
             return self._finalize(db, prospect, cached, icp, cached=True)
 
         return None

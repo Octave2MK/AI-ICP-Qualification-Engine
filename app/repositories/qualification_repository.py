@@ -109,26 +109,6 @@ class QualificationRepository:
 
         return qualification
 
-    def get_by_prospect_id(
-        self,
-        db: Session,
-        prospect_id: int,
-    ) -> QualificationResult | None:
-        """Legacy lookup kept for callers that do not use ICP-aware caching."""
-        qualification = (
-            db.query(Qualification)
-            .filter(
-                Qualification.prospect_id == prospect_id
-            )
-            .first()
-        )
-
-        if qualification is None:
-            return None
-        return self.to_dto(
-            qualification
-        )
-
     def get_by_prospect_and_icp(
         self,
         db: Session,

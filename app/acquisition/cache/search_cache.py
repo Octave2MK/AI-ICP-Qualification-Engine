@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 
 class SearchCache:
@@ -10,7 +11,7 @@ class SearchCache:
         ttl: int = 3600,
     ):
         self.ttl = ttl
-        self._cache = {}
+        self._cache: dict[str, tuple[Any, float]] = {}
 
 
     def get(

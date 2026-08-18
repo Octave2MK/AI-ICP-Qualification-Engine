@@ -67,7 +67,14 @@ Do not omit, merge, reorder, or invent profiles.
                     model=self._model,
                     contents=text,
                 )
+                if response.text is None:
+                    raise LLMError(
+                        "Gemini API returned an empty response (no text)."
+                    )
                 return response.text
+
+            except LLMError:
+                raise
 
             except Exception as exc:
                 error_message = str(exc).lower()
@@ -85,3 +92,5 @@ Do not omit, merge, reorder, or invent profiles.
                 raise LLMError(
                     f"Gemini API request failed: {exc}"
                 ) from exc
+
+        raise LLMError("Gemini API request failed: no attempts were made.")

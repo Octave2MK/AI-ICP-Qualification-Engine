@@ -5,6 +5,9 @@ from app.enrichment.text_cleaner import TextCleaner
 from app.enrichment.dto import ProfileData
 from app.enrichment.interfaces.extractor import BaseExtractor
 from app.enrichment.interfaces.cleaner import BaseCleaner
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class EnrichmentService:
@@ -20,12 +23,18 @@ class EnrichmentService:
         self.cleaner = cleaner or TextCleaner()
 
     def enrich(self, linkedin_url: str) -> ProfileData:
-        html = self.fetcher.fetch(linkedin_url)
-        profile = self.extractor.extract(
-            html=html,
-            linkedin_url=linkedin_url,
-        )
-        profile.clean_text = self.cleaner.clean(
-            profile.raw_text
-        )
-        return profile
+        try:
+            html = self.fetcher.fetch(linkedin_url)
+            profile = self.extractor.extract(
+                html=html,
+                linkedin_url=linkedin_url,
+            )
+            profile.clean_text = self.cleaner.clean(
+                profile.raw_text
+            )
+            return profile
+        except Exception:
+            logger.exception(
+                "Enrichment failed for %s.", linkedin_url
+            )
+            raise

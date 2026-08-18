@@ -8,6 +8,9 @@ from app.qualification.normalization.qualification_normalizer import (
     QualificationNormalizer,
 )
 from app.qualification.icp.icp_definition import ICPDefinition
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class QualificationService:
@@ -29,8 +32,15 @@ class QualificationService:
         icp: ICPDefinition | None = None,
     ) -> QualificationResult:
         prompt = self._prompt_builder.build(profile, icp)
-        response = self._llm.analyze(prompt)
-        return self._validate_result(self._parser.parse(response))
+        try:
+            response = self._llm.analyze(prompt)
+            return self._validate_result(self._parser.parse(response))
+        except Exception:
+            logger.exception(
+                "Qualification failed for profile %s.",
+                getattr(profile, "linkedin_url", None),
+            )
+            raise
 
     def qualify_batch(
         self,
@@ -40,21 +50,29 @@ class QualificationService:
         if not profiles:
             return []
 
+        logger.info("Qualifying %d profile(s) via one LLM batch call.", len(profiles))
+
         prompts = [
             self._prompt_builder.build(profile, icp)
             for profile in profiles
         ]
-        responses = self._llm.analyze_batch(prompts)
+        try:
+            responses = self._llm.analyze_batch(prompts)
 
-        if len(responses) != len(profiles):
-            raise ValueError(
-                "LLM batch response count does not match profile count."
+            if len(responses) != len(profiles):
+                raise ValueError(
+                    "LLM batch response count does not match profile count."
+                )
+
+            return [
+                self._validate_result(self._parser.parse(response))
+                for response in responses
+            ]
+        except Exception:
+            logger.exception(
+                "Batch qualification failed for %d profile(s).", len(profiles)
             )
-
-        return [
-            self._validate_result(self._parser.parse(response))
-            for response in responses
-        ]
+            raise
 
     def _validate_result(
         self,
