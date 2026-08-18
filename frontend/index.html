@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI ICP Qualification Engine</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+  <header>
+    <h1>AI ICP Qualification Engine</h1>
+    <p>Recherche et qualification automatique de prospects B2B.</p>
+  </header>
+
+  <main>
+    <form id="icp-form">
+      <h2>Configuration ICP (Ideal Customer Profile)</h2>
+
+      <label>Métier cible
+        <input name="job_title" value="Business Coach" required>
+      </label>
+
+      <label>Pays cible
+        <input name="country" value="France" required>
+      </label>
+
+      <label>Secteur / domaine
+        <input name="sector" value="Coaching">
+      </label>
+
+      <label>Nombre de prospects souhaités
+        <input name="max_prospects" type="number" min="1" max="100" value="20">
+      </label>
+
+      <label>Mots-clés obligatoires
+        <input name="required_keywords" placeholder="séparés par des virgules">
+      </label>
+
+      <label>Mots-clés interdits
+        <input name="forbidden_keywords" value="étudiant, stage, stagiaire, student, internship">
+      </label>
+
+      <button type="submit">Lancer la recherche</button>
+    </form>
+
+    <p id="cooldown-warning" class="warning" hidden></p>
+
+    <section id="progress-section" hidden>
+      <progress id="progress-bar" value="0" max="100"></progress>
+      <p id="progress-text"></p>
+    </section>
+
+    <p id="error-message" class="error" hidden></p>
+
+    <section id="results-section" hidden>
+      <h2>Résultats</h2>
+      <p id="results-count"></p>
+      <table id="results-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>LinkedIn</th>
+            <th>Métier</th>
+            <th>Statut</th>
+            <th>Erreur</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+  <script src="./js/app.js" type="module"></script>
+</body>
+
+</html>
