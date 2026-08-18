@@ -66,6 +66,28 @@ def run_job(job_id: str, icp: ICP) -> None:
         db.close()
 
 
+def _normalize_linkedin_url(url: str | None) -> str:
+    """Return an absolute, clickable URL. Prospect.linkedin_url is stored
+    normalized (see app.acquisition.normalizer.URLNormalizer), which can
+    strip the scheme (e.g. "linkedin.com/in/xyz") — used as-is in an <a
+    href>, the browser would resolve that as a relative link instead of a
+    real LinkedIn profile."""
+    if not url:
+        return ""
+
+    value = str(url).strip()
+    if not value:
+        return ""
+
+    if value.startswith(("http://", "https://")):
+        return value
+
+    if value.startswith("linkedin.com/"):
+        return f"https://{value}"
+
+    return value
+
+
 def _serialize_result(item: dict) -> dict:
     """Convertit une entrée de workflow.run() (objets SQLAlchemy/dataclasses
     imbriqués) en dict JSON-safe. La forme de item["qualification"] varie
@@ -74,7 +96,7 @@ def _serialize_result(item: dict) -> dict:
     (dict imbriqué avec "decision"/"qualification"/"score")."""
     prospect = item.get("prospect")
     name = getattr(prospect, "fullname", "") or ""
-    linkedin_url = getattr(prospect, "linkedin_url", "") or ""
+    linkedin_url = _normalize_linkedin_url(getattr(prospect, "linkedin_url", ""))
     job_title = getattr(prospect, "job_title", "") or ""
 
     qualification = item.get("qualification")
