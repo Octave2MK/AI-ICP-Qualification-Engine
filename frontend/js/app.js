@@ -246,7 +246,7 @@ async function handleSubmit(event) {
     console.error(err);
   } finally {
     submitButton.disabled = false;
-    btnText.textContent = "Exécuter la requête";
+    btnText.textContent = "Lancer la recherche";
     btnSpinner.classList.add("hidden");
   }
 }

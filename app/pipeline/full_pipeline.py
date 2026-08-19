@@ -20,7 +20,7 @@ class FullICPWorkflow:
 
     def run(self, db, icp, progress_callback=None):
         if progress_callback:
-            progress_callback(5, "Recherche des prospects...")
+            progress_callback(5, "Recherche des prospects..., veillez patienter")
 
         prospects = self.acquisition_service.acquire(db, icp)
 
@@ -119,7 +119,7 @@ class FullICPWorkflow:
                 percent = 20 + int(((index + 1) / total) * 35) if total else 55
                 progress_callback(
                     percent,
-                    f"Enrichissement du prospect {index + 1}/{total}",
+                    f"Enrichissement du prospect {index + 1}/{total}, veillez patienter",
                 )
 
             try:

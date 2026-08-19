@@ -185,62 +185,124 @@ Reprend exactement les champs du formulaire Streamlit actuel, sans logique — j
 ```html
 <!doctype html>
 <html lang="fr">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI ICP Qualification Engine</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <meta name="description" content="Moteur de recherche et de qualification automatique de prospects B2B.">
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
+
 <body>
-  <header>
-    <h1>AI ICP Qualification Engine</h1>
-    <p>Recherche et qualification automatique de prospects B2B.</p>
-  </header>
+  <div class="page-loader" id="page-loader">
+    <div class="scientific-spinner"></div>
+    <p class="mono-text text-muted" id="page-loader-status">Initialisation de l'environnement...</p>
+  </div>
 
-  <form id="icp-form">
-    <label>Métier cible
-      <input name="job_title" value="Business Coach" required>
-    </label>
-    <label>Pays cible
-      <input name="country" value="France" required>
-    </label>
-    <label>Secteur / domaine
-      <input name="sector" value="Coaching">
-    </label>
-    <label>Nombre de prospects souhaités
-      <input name="max_prospects" type="number" min="1" max="100" value="20">
-    </label>
-    <label>Mots-clés obligatoires
-      <input name="required_keywords" placeholder="séparés par des virgules">
-    </label>
-    <label>Mots-clés interdits
-      <input name="forbidden_keywords" value="étudiant, stage, stagiaire, student, internship">
-    </label>
-    <button type="submit">Lancer la recherche</button>
-  </form>
+  <div class="app-container hidden" id="app-container">
+    <header class="app-header">
+      <div class="header-glow"></div>
+      <span class="eyebrow mono-text">Moteur de recherche et de qualification automatique B2B</span>
+      <h1>AI ICP Qualification Engine</h1>
+      <p class="description">
+        AI ICP Qualification Engine automatise la recherche et la qualification de 
+        prospects B2B à partir de votre Ideal Customer Profile (ICP), ou Profil du client idéal. 
+        Le moteur recherche des profils pertinents, les enrichit avec des données publiques, 
+        analyse leur adéquation avec vos critères grâce à l’IA, 
+        puis les score et les classe afin d’identifier rapidement les prospects les plus qualifiés.
+      </p>
+    </header>
 
-  <p id="cooldown-warning" class="warning" hidden></p>
+    <main>
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Paramètres de recherche des Profils</h2>
+          <span class="status-badge status-ready">Prêt</span>
+        </div>
 
-  <section id="progress-section" hidden>
-    <progress id="progress-bar" value="0" max="100"></progress>
-    <p id="progress-text"></p>
-  </section>
+        <form id="icp-form">
+          <div class="form-grid">
+            <label>
+              <span class="label-text">Métier cible</span>
+              <input type="text" name="job_title" placeholder="Entrez le métier cible" required>
+            </label>
+            <label>
+              <span class="label-text">Pays cible</span>
+              <input type="text" name="country" placeholder="Entrez le pays" required>
+            </label>
+            <label>
+              <span class="label-text">Secteur / Domaine</span>
+              <input type="text" name="sector" placeholder="Entrez le secteur d'activité">
+            </label>
+            <label>
+              <span class="label-text">Volume (Max)</span>
+              <input type="number" name="max_prospects" type="number" min="1" max="200" value="25" required>
+            </label>
+            <label class="full-width">
+              <span class="label-text">Mots-clés obligatoires (Inclusions)</span>
+              <input type="text" name="required_keywords" placeholder="Ex: CEO, Fondateur, Directeur (séparés par des virgules)">
+            </label>
+            <label class="full-width">
+              <span class="label-text">Mots-clés interdits (Exclusions)</span>
+              <input type="text" name="forbidden_keywords" value="étudiant, stage, stagiaire, student, internship">
+            </label>
+          </div>
 
-  <p id="error-message" class="error" hidden></p>
+          <div class="form-actions">
+            <button type="submit" id="submit-btn">
+              <span class="btn-text">Lancer la recherche</span>
+              <span class="btn-spinner hidden"></span>
+            </button>
+          </div>
+        </form>
+      </section>
 
-  <section id="results-section" hidden>
-    <h2>Résultats</h2>
-    <p id="results-count"></p>
-    <table id="results-table">
-      <thead>
-        <tr><th>Nom</th><th>LinkedIn</th><th>Métier</th><th>Statut</th><th>Erreur</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+      <div class="alert alert-warning hidden" id="cooldown-warning"></div>
+      <div class="alert alert-error hidden" id="error-message"></div>
 
-  <script src="/js/app.js" type="module"></script>
+      <section class="panel hidden" id="progress-section">
+        <div class="progress-header">
+          <span class="mono-text" id="progress-text">Traitement en cours...</span>
+          <span class="mono-badge" id="progress-percent">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-bar"></div>
+        </div>
+      </section>
+
+      <section class="panel hidden" id="results-section">
+        <div class="panel-header">
+          <h2>Ensemble de données</h2>
+          <div class="header-actions">
+            <span class="mono-badge" id="results-count">0 entrées</span>
+            <button type="button" class="btn-secondary" id="export-csv-btn">Exporter en CSV</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table id="results-table">
+            <thead>
+              <tr>
+                <th>Identité</th>
+                <th>Profil LinkedIn</th>
+                <th>Fonction</th>
+                <th>Statut</th>
+                <th>Log Erreur</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./js/app.js"></script>
 </body>
+
 </html>
 ```
 
@@ -254,9 +316,61 @@ Feuille de style simple et autonome (pas de framework CSS externe — pas de CDN
 const API_BASE = "/api";
 const COOLDOWN_SECONDS = 30;
 const MAX_RUNS_PER_SESSION = 20;
+const POLL_INTERVAL_MS = 1500;
 
 let lastRunAt = 0;
 let runCount = 0;
+let currentProspects = [];
+
+const LOADER_MIN_DISPLAY_MS = 400;
+const LOADER_RETRY_DELAY_MS = 1000;
+
+window.addEventListener("load", () => {
+  initializeEnvironment();
+});
+
+async function initializeEnvironment() {
+  const loader = document.getElementById("page-loader");
+  const loaderStatus = document.getElementById("page-loader-status");
+  const app = document.getElementById("app-container");
+
+  const startedAt = Date.now();
+  await waitForApiReady(loaderStatus);
+
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < LOADER_MIN_DISPLAY_MS) {
+    await sleep(LOADER_MIN_DISPLAY_MS - elapsed);
+  }
+
+  loader.style.opacity = "0";
+  loader.style.visibility = "hidden";
+  app.classList.remove("hidden");
+}
+
+async function waitForApiReady(loaderStatus) {
+  let attempt = 0;
+
+  for (;;) {
+    attempt += 1;
+    try {
+      const res = await fetch(`${API_BASE}/health`, { cache: "no-store" });
+      if (res.ok) {
+        if (loaderStatus) loaderStatus.textContent = "Environnement prêt.";
+        return;
+      }
+      throw new Error(`health check returned ${res.status}`);
+    } catch (err) {
+      if (loaderStatus) {
+        loaderStatus.textContent =
+          attempt === 1
+            ? "Connexion au serveur..."
+            : `Serveur indisponible, nouvelle tentative (${attempt})...`;
+      }
+      console.warn("API health check failed:", err);
+      await sleep(LOADER_RETRY_DELAY_MS);
+    }
+  }
+}
 
 async function createJob(payload) {
   const res = await fetch(`${API_BASE}/jobs`, {
@@ -264,116 +378,26 @@ async function createJob(payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("job creation failed");
+  if (!res.ok) throw new Error(`Échec de création du job (${res.status})`);
   return (await res.json()).job_id;
 }
 
 async function getStatus(jobId) {
   const res = await fetch(`${API_BASE}/jobs/${jobId}`);
-  if (!res.ok) throw new Error("status check failed");
+  if (!res.ok) throw new Error(`Échec de la vérification du statut (${res.status})`);
   return res.json();
 }
 
 async function getResults(jobId) {
   const res = await fetch(`${API_BASE}/jobs/${jobId}/results`);
-  if (!res.ok) throw new Error("results fetch failed");
+  if (!res.ok) throw new Error(`Échec de la récupération des résultats (${res.status})`);
   return res.json();
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function splitKeywords(raw) {
-  return raw.split(",").map((s) => s.trim()).filter(Boolean);
-}
-
-document.getElementById("icp-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const now = Date.now();
-  const remainingCooldown = COOLDOWN_SECONDS - (now - lastRunAt) / 1000;
-  const cooldownEl = document.getElementById("cooldown-warning");
-
-  if (lastRunAt && remainingCooldown > 0) {
-    cooldownEl.textContent = `Veuillez patienter encore ${Math.ceil(remainingCooldown)} s avant de relancer une recherche.`;
-    cooldownEl.hidden = false;
-    return;
-  }
-  if (runCount >= MAX_RUNS_PER_SESSION) {
-    cooldownEl.textContent = `Nombre maximal de recherches atteint pour cette session (${MAX_RUNS_PER_SESSION}). Rechargez la page pour réinitialiser.`;
-    cooldownEl.hidden = false;
-    return;
-  }
-  cooldownEl.hidden = true;
-  lastRunAt = now;
-  runCount += 1;
-
-  const formData = new FormData(event.target);
-  const payload = {
-    job_title: formData.get("job_title").trim(),
-    country: formData.get("country").trim(),
-    sector: formData.get("sector").trim(),
-    max_prospects: Number(formData.get("max_prospects")),
-    required_keywords: splitKeywords(formData.get("required_keywords")),
-    forbidden_keywords: splitKeywords(formData.get("forbidden_keywords")),
-  };
-
-  document.getElementById("error-message").hidden = true;
-  document.getElementById("results-section").hidden = true;
-  const progressSection = document.getElementById("progress-section");
-  const progressBar = document.getElementById("progress-bar");
-  const progressText = document.getElementById("progress-text");
-  progressSection.hidden = false;
-
-  try {
-    const jobId = await createJob(payload);
-
-    let status;
-    do {
-      await sleep(1500);
-      status = await getStatus(jobId);
-      progressBar.value = status.progress_percent;
-      progressText.textContent = status.progress_text;
-    } while (status.status === "pending" || status.status === "running");
-
-    progressSection.hidden = true;
-
-    if (status.status === "failed") {
-      const errorEl = document.getElementById("error-message");
-      errorEl.textContent = "Une erreur est survenue pendant le traitement. Consultez les journaux serveur pour plus de détails.";
-      errorEl.hidden = false;
-      return;
-    }
-
-    const { prospects } = await getResults(jobId);
-    renderResults(prospects);
-  } catch (err) {
-    progressSection.hidden = true;
-    const errorEl = document.getElementById("error-message");
-    errorEl.textContent = "Une erreur est survenue pendant le traitement.";
-    errorEl.hidden = false;
-    console.error(err);
-  }
-});
-
-function renderResults(prospects) {
-  const section = document.getElementById("results-section");
-  const tbody = document.querySelector("#results-table tbody");
-  tbody.innerHTML = "";
-
-  for (const p of prospects) {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${escapeHtml(p.name)}</td>
-      <td><a href="${escapeHtml(p.linkedin_url)}" target="_blank" rel="noopener">${escapeHtml(p.linkedin_url)}</a></td>
-      <td>${escapeHtml(p.job_title)}</td>
-      <td>${escapeHtml(p.status ?? "")}</td>
-      <td>${escapeHtml(p.error ?? "")}</td>
-    `;
-    tbody.appendChild(row);
-  }
-
-  document.getElementById("results-count").textContent = `${prospects.length} prospects traités`;
-  section.hidden = false;
+  return String(raw || "").split(",").map((value) => value.trim()).filter(Boolean);
 }
 
 function escapeHtml(value) {
@@ -381,6 +405,169 @@ function escapeHtml(value) {
   div.textContent = String(value ?? "");
   return div.innerHTML;
 }
+
+function toggleVisibility(id, forceHide) {
+  const el = document.getElementById(id);
+  if (forceHide) {
+    el.classList.add("hidden");
+  } else {
+    el.classList.remove("hidden");
+  }
+}
+
+function showMessage(type, message) {
+  const id = type === "warning" ? "cooldown-warning" : "error-message";
+  const el = document.getElementById(id);
+  el.textContent = message;
+  toggleVisibility(id, false);
+}
+
+function renderResults(prospects) {
+  currentProspects = Array.isArray(prospects) ? prospects : [];
+  const tbody = document.querySelector("#results-table tbody");
+  tbody.innerHTML = "";
+
+  currentProspects.forEach((prospect, index) => {
+    const row = document.createElement("tr");
+    row.className = "row-animate";
+    row.style.animationDelay = `${index * 0.05}s`;
+
+    row.innerHTML = `
+      <td><strong>${escapeHtml(prospect.name)}</strong></td>
+      <td><a href="${escapeHtml(prospect.linkedin_url)}" target="_blank" rel="noopener">Lien Profil ↗</a></td>
+      <td>${escapeHtml(prospect.job_title)}</td>
+      <td><span class="status-badge">${escapeHtml(prospect.status ?? "N/A")}</span></td>
+      <td class="text-muted">${escapeHtml(prospect.error ?? "-")}</td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  document.getElementById("results-count").textContent = `${currentProspects.length} entrées qualifiées`;
+  document.getElementById("export-csv-btn").disabled = currentProspects.length === 0;
+  toggleVisibility("results-section", false);
+}
+
+/* --- Export CSV --- */
+function csvCell(value) {
+  const str = String(value ?? "");
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+function exportCsv() {
+  if (!currentProspects.length) return;
+
+  const headers = ["Identité", "Profil LinkedIn", "Fonction", "Statut", "Log Erreur"];
+  const lines = [headers.map(csvCell).join(",")];
+
+  currentProspects.forEach((p) => {
+    lines.push([
+      csvCell(p.name),
+      csvCell(p.linkedin_url),
+      csvCell(p.job_title),
+      csvCell(p.status ?? "N/A"),
+      csvCell(p.error ?? "-"),
+    ].join(","));
+  });
+
+  const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  link.href = url;
+  link.download = `icp-prospects-${stamp}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+async function handleSubmit(event) {
+  event.preventDefault();
+
+  const now = Date.now();
+  const remainingCooldown = COOLDOWN_SECONDS - (now - lastRunAt) / 1000;
+
+  toggleVisibility("cooldown-warning", true);
+  toggleVisibility("error-message", true);
+
+  if (lastRunAt && remainingCooldown > 0) {
+    showMessage("warning", `Protection anti-spam active. Patientez ${Math.ceil(remainingCooldown)}s.`);
+    return;
+  }
+
+  if (runCount >= MAX_RUNS_PER_SESSION) {
+    showMessage("warning", `Quota de session atteint (${MAX_RUNS_PER_SESSION}). Veuillez recharger l'environnement.`);
+    return;
+  }
+
+  lastRunAt = now;
+  runCount += 1;
+
+  const formData = new FormData(event.target);
+  const payload = {
+    job_title: formData.get("job_title").trim(),
+    country: formData.get("country").trim(),
+    sector: String(formData.get("sector") || "").trim(),
+    max_prospects: Number(formData.get("max_prospects")),
+    required_keywords: splitKeywords(formData.get("required_keywords")),
+    forbidden_keywords: splitKeywords(formData.get("forbidden_keywords")),
+  };
+
+  toggleVisibility("results-section", true);
+  toggleVisibility("progress-section", false);
+
+  const progressBar = document.getElementById("progress-bar");
+  const progressPercent = document.getElementById("progress-percent");
+  const progressText = document.getElementById("progress-text");
+
+  progressBar.style.width = "0%";
+  progressPercent.textContent = "0%";
+  progressText.textContent = "Initialisation du cluster d'extraction...";
+
+  const submitButton = document.getElementById("submit-btn");
+  const btnText = submitButton.querySelector(".btn-text");
+  const btnSpinner = submitButton.querySelector(".btn-spinner");
+
+  submitButton.disabled = true;
+  btnText.textContent = "Exécution...";
+  btnSpinner.classList.remove("hidden");
+
+  try {
+    const jobId = await createJob(payload);
+
+    let status;
+    do {
+      await sleep(POLL_INTERVAL_MS);
+      status = await getStatus(jobId);
+
+      const percentStr = `${status.progress_percent || 0}%`;
+      progressBar.style.width = percentStr;
+      progressPercent.textContent = percentStr;
+      progressText.textContent = status.progress_text || "Traitement des nœuds...";
+    } while (status.status === "pending" || status.status === "running");
+
+    toggleVisibility("progress-section", true);
+
+    if (status.status === "failed") {
+      showMessage("error", status.error || "Erreur système lors du traitement. Consultez les logs serveur.");
+      return;
+    }
+
+    const { prospects } = await getResults(jobId);
+    renderResults(prospects);
+  } catch (err) {
+    toggleVisibility("progress-section", true);
+    showMessage("error", "Exception non gérée durant l'exécution de la requête.");
+    console.error(err);
+  } finally {
+    submitButton.disabled = false;
+    btnText.textContent = "Lancer la recherche";
+    btnSpinner.classList.add("hidden");
+  }
+}
+
+document.getElementById("icp-form").addEventListener("submit", handleSubmit);
+document.getElementById("export-csv-btn").addEventListener("click", exportCsv);
 ```
 
 Points notables, à conserver tels quels lors de l'implémentation :
