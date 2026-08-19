@@ -5,60 +5,56 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI ICP Qualification Engine</title>
+  <meta name="description" content="Moteur de recherche et de qualification automatique de prospects B2B.">
   <link rel="stylesheet" href="./css/style.css">
-  <!-- Fonts: Inter pour l'interface, Fira Code pour les données -->
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 
 <body>
-  <!-- Animation d'entrée de page -->
-  <div id="page-loader" class="page-loader">
+  <div class="page-loader" id="page-loader">
     <div class="scientific-spinner"></div>
-    <span id="page-loader-status" class="mono-text">Initialisation de l'environnement...</span>
+    <p class="mono-text text-muted" id="page-loader-status">Initialisation de l'environnement...</p>
   </div>
 
-  <div id="app-container" class="app-container hidden">
-    <header class="app-header fade-in">
-      <div class="header-content">
-        <h1>AI ICP Qualification Engine</h1>
-        <p class="subtitle">Moteur de recherche et de qualification automatique B2B</p>
-      </div>
+  <div class="app-container hidden" id="app-container">
+    <header class="app-header">
+      <div class="header-glow"></div>
+      <span class="eyebrow mono-text">ICP // ENGINE</span>
+      <h1>AI ICP Qualification Engine</h1>
+      <p class="subtitle">Moteur de recherche et de qualification automatique B2B</p>
     </header>
 
-    <main class="fade-in slide-up">
+    <main>
       <section class="panel">
-        <form id="icp-form">
-          <div class="panel-header">
-            <h2>Paramètres d'Extraction ICP</h2>
-            <span class="status-badge">Prêt</span>
-          </div>
+        <div class="panel-header">
+          <h2>Paramètres d'Extraction ICP</h2>
+          <span class="status-badge status-ready">Prêt</span>
+        </div>
 
+        <form id="icp-form">
           <div class="form-grid">
             <label>
               <span class="label-text">Métier cible</span>
-              <input type="text" name="job_title" value="Business Coach" required>
+              <input type="text" name="job_title" placeholder="Entrer le métier cible" required>
             </label>
-
             <label>
               <span class="label-text">Pays cible</span>
-              <input type="text" name="country" value="France" required>
+              <input type="text" name="country" placeholder="Entrer le pays" required>
             </label>
-
             <label>
               <span class="label-text">Secteur / Domaine</span>
-              <input type="text" name="sector" value="Coaching">
+              <input type="text" name="sector" placeholder="Entrer le secteur/domaine">
             </label>
-
             <label>
               <span class="label-text">Volume (Max)</span>
-              <input type="number" name="max_prospects" min="1" max="100" value="20" class="mono-text">
+              <input type="number" name="max_prospects" type="number" min="1" max="200" value="25" required>
             </label>
-
             <label class="full-width">
               <span class="label-text">Mots-clés obligatoires (Inclusions)</span>
               <input type="text" name="required_keywords" placeholder="Ex: CEO, Fondateur, Directeur (séparés par des virgules)">
             </label>
-
             <label class="full-width">
               <span class="label-text">Mots-clés interdits (Exclusions)</span>
               <input type="text" name="forbidden_keywords" value="étudiant, stage, stagiaire, student, internship">
@@ -67,33 +63,33 @@
 
           <div class="form-actions">
             <button type="submit" id="submit-btn">
-              <span class="btn-text">Exécuter la requête</span>
-              <div class="btn-spinner hidden"></div>
+              <span class="btn-text">Lancer la recherche</span>
+              <span class="btn-spinner hidden"></span>
             </button>
           </div>
         </form>
       </section>
 
-      <div id="feedback-container">
-        <div id="cooldown-warning" class="alert alert-warning hidden"></div>
-        <div id="error-message" class="alert alert-error hidden"></div>
-      </div>
+      <div class="alert alert-warning hidden" id="cooldown-warning"></div>
+      <div class="alert alert-error hidden" id="error-message"></div>
 
-      <section id="progress-section" class="panel hidden fade-in">
+      <section class="panel hidden" id="progress-section">
         <div class="progress-header">
-          <span class="mono-text">Traitement en cours...</span>
-          <span id="progress-percent" class="mono-text font-bold">0%</span>
+          <span class="mono-text" id="progress-text">Traitement en cours...</span>
+          <span class="mono-badge" id="progress-percent">0%</span>
         </div>
         <div class="progress-track">
-          <div id="progress-bar" class="progress-fill" style="width: 0%"></div>
+          <div class="progress-fill" id="progress-bar"></div>
         </div>
-        <p id="progress-text" class="mono-text text-muted"></p>
       </section>
 
-      <section id="results-section" class="panel hidden fade-in">
+      <section class="panel hidden" id="results-section">
         <div class="panel-header">
           <h2>Ensemble de données</h2>
-          <span id="results-count" class="mono-badge">0 entrées</span>
+          <div class="header-actions">
+            <span class="mono-badge" id="results-count">0 entrées</span>
+            <button type="button" class="btn-secondary" id="export-csv-btn">Exporter en CSV</button>
+          </div>
         </div>
         <div class="table-container">
           <table id="results-table">
@@ -112,7 +108,8 @@
       </section>
     </main>
   </div>
-  <script src="./js/app.js" type="module"></script>
+
+  <script src="./js/app.js"></script>
 </body>
 
 </html>

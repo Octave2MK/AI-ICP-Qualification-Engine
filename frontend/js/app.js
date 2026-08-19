@@ -5,21 +5,19 @@ const POLL_INTERVAL_MS = 1500;
 
 let lastRunAt = 0;
 let runCount = 0;
+let currentProspects = [];
 
-// Gestion du loader initial de la page : reste affiché tant que le backend
-// (l'environnement réel : recherche/enrichissement/qualification) n'a pas
-// répondu à /api/health, au lieu d'un délai fixe déconnecté de l'état réel.
 const LOADER_MIN_DISPLAY_MS = 400;
 const LOADER_RETRY_DELAY_MS = 1000;
 
-window.addEventListener('load', () => {
+window.addEventListener("load", () => {
   initializeEnvironment();
 });
 
 async function initializeEnvironment() {
-  const loader = document.getElementById('page-loader');
-  const loaderStatus = document.getElementById('page-loader-status');
-  const app = document.getElementById('app-container');
+  const loader = document.getElementById("page-loader");
+  const loaderStatus = document.getElementById("page-loader-status");
+  const app = document.getElementById("app-container");
 
   const startedAt = Date.now();
   await waitForApiReady(loaderStatus);
@@ -29,16 +27,11 @@ async function initializeEnvironment() {
     await sleep(LOADER_MIN_DISPLAY_MS - elapsed);
   }
 
-  loader.style.opacity = '0';
-  loader.style.visibility = 'hidden';
-  app.classList.remove('hidden');
+  loader.style.opacity = "0";
+  loader.style.visibility = "hidden";
+  app.classList.remove("hidden");
 }
 
-/**
- * Poll GET /api/health until the backend responds successfully. Retries
- * indefinitely with visible feedback rather than revealing a form the user
- * could submit against a backend that isn't actually up yet.
- */
 async function waitForApiReady(loaderStatus) {
   let attempt = 0;
 
@@ -89,7 +82,7 @@ async function getResults(jobId) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function splitKeywords(raw) {
-  return raw.split(",").map((value) => value.trim()).filter(Boolean);
+  return String(raw || "").split(",").map((value) => value.trim()).filter(Boolean);
 }
 
 function escapeHtml(value) {
@@ -98,33 +91,32 @@ function escapeHtml(value) {
   return div.innerHTML;
 }
 
-// Utilitaires de manipulation de l'UI
 function toggleVisibility(id, forceHide) {
   const el = document.getElementById(id);
   if (forceHide) {
-    el.classList.add('hidden');
+    el.classList.add("hidden");
   } else {
-    el.classList.remove('hidden');
+    el.classList.remove("hidden");
   }
 }
 
 function showMessage(type, message) {
-  const id = type === 'warning' ? 'cooldown-warning' : 'error-message';
+  const id = type === "warning" ? "cooldown-warning" : "error-message";
   const el = document.getElementById(id);
   el.textContent = message;
   toggleVisibility(id, false);
 }
 
 function renderResults(prospects) {
+  currentProspects = Array.isArray(prospects) ? prospects : [];
   const tbody = document.querySelector("#results-table tbody");
   tbody.innerHTML = "";
 
-  prospects.forEach((prospect, index) => {
+  currentProspects.forEach((prospect, index) => {
     const row = document.createElement("tr");
     row.className = "row-animate";
-    // Animation en cascade (stagger effect) basée sur l'index
-    row.style.animationDelay = `${index * 0.05}s`; 
-    
+    row.style.animationDelay = `${index * 0.05}s`;
+
     row.innerHTML = `
       <td><strong>${escapeHtml(prospect.name)}</strong></td>
       <td><a href="${escapeHtml(prospect.linkedin_url)}" target="_blank" rel="noopener">Lien Profil ↗</a></td>
@@ -135,8 +127,43 @@ function renderResults(prospects) {
     tbody.appendChild(row);
   });
 
-  document.getElementById("results-count").textContent = `${prospects.length} entrées qualifiées`;
+  document.getElementById("results-count").textContent = `${currentProspects.length} entrées qualifiées`;
+  document.getElementById("export-csv-btn").disabled = currentProspects.length === 0;
   toggleVisibility("results-section", false);
+}
+
+/* --- Export CSV --- */
+function csvCell(value) {
+  const str = String(value ?? "");
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+function exportCsv() {
+  if (!currentProspects.length) return;
+
+  const headers = ["Identité", "Profil LinkedIn", "Fonction", "Statut", "Log Erreur"];
+  const lines = [headers.map(csvCell).join(",")];
+
+  currentProspects.forEach((p) => {
+    lines.push([
+      csvCell(p.name),
+      csvCell(p.linkedin_url),
+      csvCell(p.job_title),
+      csvCell(p.status ?? "N/A"),
+      csvCell(p.error ?? "-"),
+    ].join(","));
+  });
+
+  const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  link.href = url;
+  link.download = `icp-prospects-${stamp}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 async function handleSubmit(event) {
@@ -149,12 +176,12 @@ async function handleSubmit(event) {
   toggleVisibility("error-message", true);
 
   if (lastRunAt && remainingCooldown > 0) {
-    showMessage('warning', `Protection anti-spam active. Patientez ${Math.ceil(remainingCooldown)}s.`);
+    showMessage("warning", `Protection anti-spam active. Patientez ${Math.ceil(remainingCooldown)}s.`);
     return;
   }
 
   if (runCount >= MAX_RUNS_PER_SESSION) {
-    showMessage('warning', `Quota de session atteint (${MAX_RUNS_PER_SESSION}). Veuillez recharger l'environnement.`);
+    showMessage("warning", `Quota de session atteint (${MAX_RUNS_PER_SESSION}). Veuillez recharger l'environnement.`);
     return;
   }
 
@@ -165,7 +192,7 @@ async function handleSubmit(event) {
   const payload = {
     job_title: formData.get("job_title").trim(),
     country: formData.get("country").trim(),
-    sector: formData.get("sector").trim(),
+    sector: String(formData.get("sector") || "").trim(),
     max_prospects: Number(formData.get("max_prospects")),
     required_keywords: splitKeywords(formData.get("required_keywords")),
     forbidden_keywords: splitKeywords(formData.get("forbidden_keywords")),
@@ -177,7 +204,7 @@ async function handleSubmit(event) {
   const progressBar = document.getElementById("progress-bar");
   const progressPercent = document.getElementById("progress-percent");
   const progressText = document.getElementById("progress-text");
-  
+
   progressBar.style.width = "0%";
   progressPercent.textContent = "0%";
   progressText.textContent = "Initialisation du cluster d'extraction...";
@@ -185,8 +212,7 @@ async function handleSubmit(event) {
   const submitButton = document.getElementById("submit-btn");
   const btnText = submitButton.querySelector(".btn-text");
   const btnSpinner = submitButton.querySelector(".btn-spinner");
-  
-  // État de chargement du bouton
+
   submitButton.disabled = true;
   btnText.textContent = "Exécution...";
   btnSpinner.classList.remove("hidden");
@@ -198,18 +224,17 @@ async function handleSubmit(event) {
     do {
       await sleep(POLL_INTERVAL_MS);
       status = await getStatus(jobId);
-      
+
       const percentStr = `${status.progress_percent || 0}%`;
       progressBar.style.width = percentStr;
       progressPercent.textContent = percentStr;
       progressText.textContent = status.progress_text || "Traitement des nœuds...";
-      
     } while (status.status === "pending" || status.status === "running");
 
     toggleVisibility("progress-section", true);
 
     if (status.status === "failed") {
-      showMessage('error', status.error || "Erreur système lors du traitement. Consultez les logs serveur.");
+      showMessage("error", status.error || "Erreur système lors du traitement. Consultez les logs serveur.");
       return;
     }
 
@@ -217,10 +242,9 @@ async function handleSubmit(event) {
     renderResults(prospects);
   } catch (err) {
     toggleVisibility("progress-section", true);
-    showMessage('error', "Exception non gérée durant l'exécution de la requête.");
+    showMessage("error", "Exception non gérée durant l'exécution de la requête.");
     console.error(err);
   } finally {
-    // Restauration de l'état du bouton
     submitButton.disabled = false;
     btnText.textContent = "Exécuter la requête";
     btnSpinner.classList.add("hidden");
@@ -228,3 +252,4 @@ async function handleSubmit(event) {
 }
 
 document.getElementById("icp-form").addEventListener("submit", handleSubmit);
+document.getElementById("export-csv-btn").addEventListener("click", exportCsv);
