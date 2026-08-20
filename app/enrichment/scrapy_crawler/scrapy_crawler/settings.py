@@ -1,34 +1,29 @@
+import os
+
 BOT_NAME = "scrapy_crawler"
 
 SPIDER_MODULES = ["scrapy_crawler.spiders"]
 NEWSPIDER_MODULE = "scrapy_crawler.spiders"
 
-# LinkedIn's robots.txt disallows most crawling; the legacy `requests`-based
-# PageFetcher never checked robots.txt either, so this preserves identical
-# behavior rather than silently reducing the enrichment success rate.
+# Respect the existing crawler behavior. This is an application-level
+# enrichment crawler, not an anti-bot bypass mechanism.
 ROBOTSTXT_OBEY = False
 
-# Conservative concurrency: the legacy path fetches one profile at a time
-# (a plain Python for-loop). Keep the same cadence here so switching engines
-# does not increase request pressure on LinkedIn as a side effect.
-CONCURRENT_REQUESTS = 4
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 1
+CONCURRENT_REQUESTS = int(os.getenv("SCRAPY_CONCURRENT_REQUESTS", "4"))
+CONCURRENT_REQUESTS_PER_DOMAIN = int(
+    os.getenv("SCRAPY_CONCURRENT_REQUESTS_PER_DOMAIN", "1")
+)
+DOWNLOAD_DELAY = float(os.getenv("PAGE_FETCHER_DELAY_SECONDS", "1"))
 
-# Mirrors app.enrichment.page_fetcher.PageFetcher.DEFAULT_TIMEOUT /
-# MAX_RESPONSE_BYTES / DEFAULT_HEADERS.
-DOWNLOAD_TIMEOUT = 10
+DOWNLOAD_TIMEOUT = int(os.getenv("PAGE_FETCHER_TIMEOUT", "10"))
 DOWNLOAD_MAXSIZE = 2 * 1024 * 1024
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/137.0 Safari/537.36"
+USER_AGENT = os.getenv(
+    "PAGE_FETCHER_USER_AGENT",
+    "AI-ICP-Qualification-Engine/1.0",
 )
 DEFAULT_REQUEST_HEADERS = {
     "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
-    "Accept": (
-        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 
 DOWNLOADER_MIDDLEWARES = {
@@ -40,7 +35,8 @@ ITEM_PIPELINES = {
 }
 
 RETRY_ENABLED = True
-RETRY_TIMES = 2
+RETRY_TIMES = int(os.getenv("PAGE_FETCHER_RETRY_ATTEMPTS", "2"))
+RETRY_HTTP_CODES = [408, 425, 429, 500, 502, 503, 504]
 
 LOG_LEVEL = "WARNING"
 
