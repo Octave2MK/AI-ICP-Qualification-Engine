@@ -57,7 +57,10 @@ class PageFetcher(BaseFetcher):
         attempts = self.retry_attempts + 1
 
         for attempt in range(attempts):
-            self._respect_delay()
+            # The configured delay throttles normal requests. Retry responses
+            # have their own backoff policy and must not incur a second delay.
+            if attempt == 0:
+                self._respect_delay()
             try:
                 response = requests.get(
                     url,
