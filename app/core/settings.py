@@ -21,17 +21,30 @@ class Settings:
     SEARCH_RETRY_DELAY: float = float(os.getenv("SEARCH_RETRY_DELAY", "1"))
     SEARCH_RATE_LIMIT_INTERVAL: float = float(os.getenv("SEARCH_RATE_LIMIT_INTERVAL", "1"))
 
-    PAGE_FETCHER_USER_AGENT: str = os.getenv(
-        "PAGE_FETCHER_USER_AGENT",
-        "AI-ICP-Qualification-Engine/1.0",
+    PAGE_FETCHER_USER_AGENT: str = field(
+        default_factory=lambda: os.getenv(
+            "PAGE_FETCHER_USER_AGENT",
+            "AI-ICP-Qualification-Engine/1.0",
+        )
     )
-    PAGE_FETCHER_TIMEOUT: int = int(os.getenv("PAGE_FETCHER_TIMEOUT", "10"))
-    PAGE_FETCHER_RETRY_ATTEMPTS: int = int(os.getenv("PAGE_FETCHER_RETRY_ATTEMPTS", "2"))
-    PAGE_FETCHER_BACKOFF_SECONDS: float = float(
-        os.getenv("PAGE_FETCHER_BACKOFF_SECONDS", "2")
+    # Backward-compatible public setting kept for existing callers/tests.
+    USER_AGENT: str = field(
+        default_factory=lambda: os.getenv(
+            "PAGE_FETCHER_USER_AGENT",
+            "AI-ICP-Qualification-Engine/1.0",
+        )
     )
-    PAGE_FETCHER_DELAY_SECONDS: float = float(
-        os.getenv("PAGE_FETCHER_DELAY_SECONDS", "1")
+    PAGE_FETCHER_TIMEOUT: int = field(
+        default_factory=lambda: int(os.getenv("PAGE_FETCHER_TIMEOUT", "10"))
+    )
+    PAGE_FETCHER_RETRY_ATTEMPTS: int = field(
+        default_factory=lambda: int(os.getenv("PAGE_FETCHER_RETRY_ATTEMPTS", "2"))
+    )
+    PAGE_FETCHER_BACKOFF_SECONDS: float = field(
+        default_factory=lambda: float(os.getenv("PAGE_FETCHER_BACKOFF_SECONDS", "2"))
+    )
+    PAGE_FETCHER_DELAY_SECONDS: float = field(
+        default_factory=lambda: float(os.getenv("PAGE_FETCHER_DELAY_SECONDS", "1"))
     )
 
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")
