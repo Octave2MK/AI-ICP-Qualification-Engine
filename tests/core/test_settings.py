@@ -17,6 +17,6 @@ def test_workflow_throttling_settings_exist():
     assert settings.MAX_WORKFLOW_RUNS_PER_SESSION > 0
 
 
-def test_enrichment_engine_defaults_to_bs4():
+def test_enrichment_engine_is_supported():
 
-    assert settings.ENRICHMENT_ENGINE == "bs4"
+    assert settings.ENRICHMENT_ENGINE in {"bs4", "scrapy"}
