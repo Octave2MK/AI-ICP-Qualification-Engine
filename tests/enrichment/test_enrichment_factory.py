@@ -1,14 +1,22 @@
 import pytest
 
+from app.core.settings import settings
 from app.enrichment.enrichment_factory import EnrichmentFactory
 from app.enrichment.osint_enricher import OSINTEnricher
 from app.enrichment.scrapy_batch_enricher import ScrapyBatchEnricher
 
 
-def test_create_defaults_to_bs4_engine():
+def test_create_uses_configured_enrichment_engine():
     enricher = EnrichmentFactory.create()
 
-    assert isinstance(enricher, OSINTEnricher)
+    if settings.ENRICHMENT_ENGINE == "bs4":
+        assert isinstance(enricher, OSINTEnricher)
+    elif settings.ENRICHMENT_ENGINE == "scrapy":
+        assert isinstance(enricher, ScrapyBatchEnricher)
+    else:
+        pytest.fail(
+            f"Unsupported configured enrichment engine: {settings.ENRICHMENT_ENGINE}"
+        )
 
 
 def test_create_bs4_engine_explicitly():
