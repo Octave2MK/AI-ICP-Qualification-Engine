@@ -34,7 +34,7 @@ services:
       DATABASE_URL: sqlite:////data/icp.db
       LLM_PROVIDER: gemini
       GEMINI_API_KEY: ${GEMINI_API_KEY:-AQ.Ab8RN6IDZOafJzgkwGYWKlXFrDJIDRZI1jdUkOtcKwTk8tTnTw}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
       ENRICHMENT_ENGINE: ${ENRICHMENT_ENGINE:-bs4}
 
     volumes:

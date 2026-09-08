@@ -49,7 +49,7 @@ class Settings:
 
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")
     GEMINI_API_KEY: str = field(default=os.getenv("GEMINI_API_KEY", ""), repr=False)
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
     OPENAI_API_KEY: str = field(default=os.getenv("OPENAI_API_KEY", ""), repr=False)
 
     WORKFLOW_COOLDOWN_SECONDS: float = float(os.getenv("WORKFLOW_COOLDOWN_SECONDS", "30"))
