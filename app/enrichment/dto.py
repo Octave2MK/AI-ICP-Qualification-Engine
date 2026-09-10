@@ -11,3 +11,5 @@ class ProfileData:
     clean_text: str = ""
     acquisition_title: str = ""
     acquisition_snippet: str = ""
+    latest_post_date: str = ""
+    latest_post_text: str = ""
