@@ -124,6 +124,14 @@ class FullICPWorkflow:
 
             try:
                 profile = enricher.enrich(prospect.linkedin_url)
+
+                if profile.is_empty():
+                    results[index] = {
+                        "prospect": prospect,
+                        "error": "Enrichment failed or produced no profile for this URL.",
+                    }
+                    continue
+
                 self._apply_acquisition_fallback(prospect, profile)
                 batch_items.append((index, prospect, profile))
             except Exception as exc:
@@ -167,7 +175,7 @@ class FullICPWorkflow:
         for index, prospect in enumerate(prospects):
             profile = profiles_by_url.get(prospect.linkedin_url)
 
-            if profile is None:
+            if profile is None or profile.is_empty():
                 results[index] = {
                     "prospect": prospect,
                     "error": "Enrichment failed or produced no profile for this URL.",

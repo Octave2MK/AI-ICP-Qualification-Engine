@@ -128,3 +128,61 @@ def test_full_icp_workflow_records_error_for_url_missing_from_batch_result():
     assert len(results) == 1
     assert "error" in results[0]
     assert "profile" not in results[0]
+
+
+def test_full_icp_workflow_records_error_for_empty_batch_profile():
+    # A batch-produced ProfileData that exists but carries no exploitable
+    # identity/bio content (e.g. Scrapy only captured a LinkedIn login
+    # wall) must be treated as an enrichment failure, not silently passed
+    # through to qualification via the acquisition fallback.
+    batch_enricher = FakeBatchEnricher(
+        {
+            "linkedin.com/in/john-doe": ProfileData(
+                linkedin_url="linkedin.com/in/john-doe",
+                name="",
+                headline="",
+                about="",
+                raw_text="Identifiez-vous pour voir le profil complet...",
+            )
+        }
+    )
+
+    workflow = FullICPWorkflow(
+        acquisition_service=FakeAcquisitionService(),
+        osint_enricher=batch_enricher,
+        qualification_pipeline=FakeQualificationPipeline(),
+    )
+
+    icp = ICP(job_titles=["Business Coach"], countries=["France"])
+
+    results = workflow.run(db=None, icp=icp)
+
+    assert len(results) == 1
+    assert "error" in results[0]
+    assert "profile" not in results[0]
+
+
+def test_full_icp_workflow_records_error_for_empty_one_by_one_profile():
+    class EmptyOSINTEnricher:
+        def enrich(self, linkedin_url):
+            return ProfileData(
+                linkedin_url=linkedin_url,
+                name="",
+                headline="",
+                about="",
+                raw_text="Identifiez-vous pour voir le profil complet...",
+            )
+
+    workflow = FullICPWorkflow(
+        acquisition_service=FakeAcquisitionService(),
+        osint_enricher=EmptyOSINTEnricher(),
+        qualification_pipeline=FakeQualificationPipeline(),
+    )
+
+    icp = ICP(job_titles=["Business Coach"], countries=["France"])
+
+    results = workflow.run(db=None, icp=icp)
+
+    assert len(results) == 1
+    assert "error" in results[0]
+    assert "profile" not in results[0]
