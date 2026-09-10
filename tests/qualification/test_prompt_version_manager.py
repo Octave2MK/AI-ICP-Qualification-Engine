@@ -7,7 +7,7 @@ def test_default_prompt_version():
 
     prompt = PromptVersionManager.get()
 
-    assert prompt["name"] == "evidence_based_prompt"
+    assert prompt["name"] == "evidence_based_offer_recency_prompt"
 
 
 

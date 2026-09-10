@@ -46,3 +46,7 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+test_urls.*
+test_prospects.*
+arborescence.txt
