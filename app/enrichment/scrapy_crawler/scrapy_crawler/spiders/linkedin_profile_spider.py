@@ -1,16 +1,14 @@
 import json
 
 import scrapy
+from bs4 import BeautifulSoup
 
+from app.enrichment.latest_post_extractor import extract_latest_post
 from scrapy_crawler.items import LinkedInProfileItem
 
 
 class LinkedInProfileSpider(scrapy.Spider):
-    """Crawls a batch of LinkedIn profile URLs in one run, given as a JSON
-    file path via `-a urls_file=...`. Extraction logic intentionally
-    mirrors app.enrichment.profile_extractor.ProfileExtractor exactly
-    (title as headline, full document text as raw_text) rather than
-    improving it, so switching engines is behavior-neutral."""
+    """Crawls LinkedIn profile URLs and extracts profile/post data."""
 
     name = "linkedin_profiles"
     allowed_domains = ["linkedin.com"]
@@ -43,12 +41,17 @@ class LinkedInProfileSpider(scrapy.Spider):
             node.strip() for node in text_nodes if node.strip()
         )
 
+        soup = BeautifulSoup(response.text, "html.parser")
+        latest_post_date, latest_post_text = extract_latest_post(soup)
+
         yield LinkedInProfileItem(
             linkedin_url=response.meta["linkedin_url"],
             name="",
             headline=headline,
             about="",
             raw_text=raw_text,
+            latest_post_date=latest_post_date,
+            latest_post_text=latest_post_text,
         )
 
     def handle_error(self, failure):
