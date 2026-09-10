@@ -14,14 +14,7 @@ SCRAPY_PROJECT_DIR = PROJECT_ROOT / "app" / "enrichment" / "scrapy_crawler"
 
 
 class ScrapyBatchEnricher(BaseBatchEnricher):
-    """Enrichit un lot d'URLs LinkedIn en une seule exécution Scrapy,
-    lancée dans un sous-processus dédié.
-
-    Le sous-processus est indispensable : le reactor Twisted sur lequel
-    Scrapy s'appuie ne peut démarrer qu'une seule fois par processus, ce qui
-    est incompatible avec le processus FastAPI/uvicorn long-vivant qui sert
-    l'API (voir MIGRATION.md, partie B.0). Chaque sous-processus obtient son
-    propre reactor frais."""
+    """Enrichit un lot d'URLs LinkedIn en une seule exécution Scrapy."""
 
     DEFAULT_TIMEOUT_SECONDS = 300
 
@@ -96,6 +89,8 @@ class ScrapyBatchEnricher(BaseBatchEnricher):
                     about=data.get("about", ""),
                     raw_text=data.get("raw_text", ""),
                     clean_text=data.get("clean_text", ""),
+                    latest_post_date=data.get("latest_post_date", ""),
+                    latest_post_text=data.get("latest_post_text", ""),
                 )
 
         return results
