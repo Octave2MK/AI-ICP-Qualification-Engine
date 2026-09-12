@@ -50,6 +50,12 @@ class Settings:
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")
     GEMINI_API_KEY: str = field(default=os.getenv("GEMINI_API_KEY", ""), repr=False)
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    # Nombre max de profils regroupés dans un même appel LLM batch. Un lot
+    # unique trop volumineux (jusqu'à max_prospects=100) augmente le rayon
+    # d'explosion en cas d'échec (tout le lot repart en erreur) et la taille
+    # du prompt envoyé. Découper en sous-lots limite les deux sans perdre
+    # l'essentiel du gain par rapport à un appel par profil.
+    GEMINI_BATCH_SIZE: int = int(os.getenv("GEMINI_BATCH_SIZE", "15"))
     OPENAI_API_KEY: str = field(default=os.getenv("OPENAI_API_KEY", ""), repr=False)
 
     WORKFLOW_COOLDOWN_SECONDS: float = float(os.getenv("WORKFLOW_COOLDOWN_SECONDS", "30"))

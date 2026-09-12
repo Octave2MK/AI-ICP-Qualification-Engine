@@ -39,6 +39,8 @@ from app.qualification.validators.result_validator import (
 
 from app.qualification.llm.factory import LLMFactory
 
+from app.core.settings import settings
+
 from app.repositories.qualification_repository import (
     QualificationRepository,
 )
@@ -78,6 +80,7 @@ def create_full_workflow(db):
             prompt_builder=PromptBuilder(),
             parser=JsonParser(),
             validator=ResultValidator(),
+            batch_size=settings.GEMINI_BATCH_SIZE,
         )
     )
 
