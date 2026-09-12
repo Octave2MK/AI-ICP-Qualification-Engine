@@ -2,7 +2,13 @@
 # convenience. This is only safe as long as the SearXNG host port stays bound
 # to 127.0.0.1 (the default in docker/docker-compose.yml). Re-enable both
 # before exposing this instance beyond localhost.
-use_default_settings: true
+use_default_settings: false
+
+outgoing:
+  extra_proxy_timeout: 10
+  proxies:
+    all://:
+      - socks5h://tor:9050
 
 server:
   # Replace this value before starting SearXNG.

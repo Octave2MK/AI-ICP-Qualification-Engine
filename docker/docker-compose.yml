@@ -1,5 +1,14 @@
 services:
 
+  # Optionnel — uniquement nécessaire si tu actives l'option Tor dans
+  # docker/settings.yml (voir le bloc "outgoing" commenté dans
+  # settings.yml.example). Sans ce service, SearXNG fonctionne
+  # normalement sans passer par Tor.
+  tor:
+    image: dperson/torproxy
+    container_name: ai_icp_tor
+    restart: unless-stopped
+
   searxng:
     image: searxng/searxng:latest
     container_name: ai_icp_searxng
