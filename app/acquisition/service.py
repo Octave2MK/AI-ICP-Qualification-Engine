@@ -1,118 +1,66 @@
-from app.enrichment.dto import ProfileData
-from app.qualification.dto import QualificationResult
-from app.qualification.interfaces import BaseLLM
-from app.qualification.llm.prompts import PromptBuilder
-from app.qualification.parsers.json_parser import JsonParser
-from app.qualification.validators.result_validator import ResultValidator
-from app.qualification.normalization.qualification_normalizer import (
-    QualificationNormalizer,
-)
-from app.qualification.icp.icp_definition import ICPDefinition
-from app.core.logging import get_logger
+from app.acquisition.acquisition_models import ICP
+from app.acquisition.pipeline import AcquisitionPipeline
+from app.repositories.prospect_repository import ProspectRepository
 
-logger = get_logger(__name__)
-
-DEFAULT_BATCH_SIZE = 15
+from app.acquisition.query_generator import QueryGenerator
+from app.acquisition.url_extractor import URLExtractor
+from app.acquisition.relevance_filter import RelevanceFilter
+from app.acquisition.normalizer import URLNormalizer
+from app.acquisition.deduplicator import Deduplicator
+from app.acquisition.prospect_mapper import ProspectMapper
+from app.acquisition.provider_factory import ProviderFactory
+from app.core.settings import settings
 
 
-class QualificationService:
+class AcquisitionService:
+    """
+    Service métier pour l'acquisition de prospects.
+    """
     def __init__(
         self,
-        llm: BaseLLM,
-        prompt_builder: PromptBuilder,
-        parser: JsonParser,
-        validator: ResultValidator,
-        batch_size: int = DEFAULT_BATCH_SIZE,
-    ) -> None:
-        self._llm = llm
-        self._prompt_builder = prompt_builder
-        self._parser = parser
-        self._validator = validator
-        # Un lot unique trop volumineux augmente le rayon d'explosion (tout
-        # le lot échoue ensemble en cas de réponse LLM invalide) et la
-        # taille du prompt envoyé. batch_size borne chaque appel réel.
-        self._batch_size = max(1, batch_size)
+        pipeline: AcquisitionPipeline,
+        repository: ProspectRepository
+    ):
+        self.pipeline = pipeline
+        self.repository = repository
 
-    def qualify(
+
+    def acquire(
         self,
-        profile: ProfileData,
-        icp: ICPDefinition | None = None,
-    ) -> QualificationResult:
-        prompt = self._prompt_builder.build(profile, icp)
-        try:
-            response = self._llm.analyze(prompt)
-            return self._validate_result(self._parser.parse(response))
-        except Exception:
-            logger.exception(
-                "Qualification failed for profile %s.",
-                getattr(profile, "linkedin_url", None),
-            )
-            raise
+        db,
+        icp: ICP
+    ):
 
-    def qualify_batch(
-        self,
-        profiles: list[ProfileData],
-        icp: ICPDefinition | None = None,
-    ) -> list[QualificationResult]:
-        if not profiles:
-            return []
-
-        chunks = [
-            profiles[start : start + self._batch_size]
-            for start in range(0, len(profiles), self._batch_size)
-        ]
-
-        logger.info(
-            "Qualifying %d profile(s) via %d LLM batch call(s) "
-            "(chunks of up to %d).",
-            len(profiles),
-            len(chunks),
-            self._batch_size,
+        prospects = (
+            self.pipeline.run_and_map(icp)
         )
 
-        results: list[QualificationResult] = []
-        start_index = 0
+        saved_prospects = []
 
-        for chunk in chunks:
-            results.extend(self._qualify_chunk(chunk, icp, start_index))
-            start_index += len(chunk)
-
-        return results
-
-    def _qualify_chunk(
-        self,
-        chunk: list[ProfileData],
-        icp: ICPDefinition | None,
-        start_index: int,
-    ) -> list[QualificationResult]:
-        prompts = [
-            self._prompt_builder.build(profile, icp)
-            for profile in chunk
-        ]
-        try:
-            responses = self._llm.analyze_batch(prompts)
-
-            if len(responses) != len(chunk):
-                raise ValueError(
-                    "LLM batch response count does not match profile count."
-                )
-
-            return [
-                self._validate_result(self._parser.parse(response))
-                for response in responses
-            ]
-        except Exception:
-            logger.exception(
-                "Batch qualification failed for profiles %d-%d.",
-                start_index,
-                start_index + len(chunk) - 1,
+        for prospect in prospects:
+            saved = self.repository.create_if_not_exists(
+                db,
+                prospect,
             )
-            raise
+            saved_prospects.append(saved)
+        return saved_prospects
 
-    def _validate_result(
-        self,
-        result: QualificationResult,
-    ) -> QualificationResult:
-        result = QualificationNormalizer.normalize(result)
-        self._validator.validate(result)
-        return result
+def create_acquisition_pipeline():
+    return AcquisitionPipeline(
+
+        query_generator=QueryGenerator(),
+
+        search_provider=ProviderFactory.create(
+            settings.SEARCH_PROVIDER
+        ),
+
+        url_extractor=URLExtractor(),
+
+        normalizer=URLNormalizer(),
+
+        deduplicator=Deduplicator(),
+
+        prospect_mapper=ProspectMapper(),
+
+        relevance_filter=RelevanceFilter(),
+    )

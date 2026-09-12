@@ -12,6 +12,8 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+DEFAULT_BATCH_SIZE = 15
+
 
 class QualificationService:
     def __init__(
@@ -20,11 +22,16 @@ class QualificationService:
         prompt_builder: PromptBuilder,
         parser: JsonParser,
         validator: ResultValidator,
+        batch_size: int = DEFAULT_BATCH_SIZE,
     ) -> None:
         self._llm = llm
         self._prompt_builder = prompt_builder
         self._parser = parser
         self._validator = validator
+        # Un lot unique trop volumineux augmente le rayon d'explosion (tout
+        # le lot échoue ensemble en cas de réponse LLM invalide) et la
+        # taille du prompt envoyé. batch_size borne chaque appel réel.
+        self._batch_size = max(1, batch_size)
 
     def qualify(
         self,
@@ -50,16 +57,42 @@ class QualificationService:
         if not profiles:
             return []
 
-        logger.info("Qualifying %d profile(s) via one LLM batch call.", len(profiles))
+        chunks = [
+            profiles[start : start + self._batch_size]
+            for start in range(0, len(profiles), self._batch_size)
+        ]
 
+        logger.info(
+            "Qualifying %d profile(s) via %d LLM batch call(s) "
+            "(chunks of up to %d).",
+            len(profiles),
+            len(chunks),
+            self._batch_size,
+        )
+
+        results: list[QualificationResult] = []
+        start_index = 0
+
+        for chunk in chunks:
+            results.extend(self._qualify_chunk(chunk, icp, start_index))
+            start_index += len(chunk)
+
+        return results
+
+    def _qualify_chunk(
+        self,
+        chunk: list[ProfileData],
+        icp: ICPDefinition | None,
+        start_index: int,
+    ) -> list[QualificationResult]:
         prompts = [
             self._prompt_builder.build(profile, icp)
-            for profile in profiles
+            for profile in chunk
         ]
         try:
             responses = self._llm.analyze_batch(prompts)
 
-            if len(responses) != len(profiles):
+            if len(responses) != len(chunk):
                 raise ValueError(
                     "LLM batch response count does not match profile count."
                 )
@@ -70,7 +103,9 @@ class QualificationService:
             ]
         except Exception:
             logger.exception(
-                "Batch qualification failed for %d profile(s).", len(profiles)
+                "Batch qualification failed for profiles %d-%d.",
+                start_index,
+                start_index + len(chunk) - 1,
             )
             raise
 
