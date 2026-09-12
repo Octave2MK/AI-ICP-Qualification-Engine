@@ -22,7 +22,10 @@ def extract_latest_post(soup: BeautifulSoup) -> tuple[str, str]:
     for selector in POST_SELECTORS:
         for container in soup.select(selector):
             for time_node in container.select("time[datetime]"):
-                raw_date = (time_node.get("datetime") or "").strip()
+                raw_date = time_node.get("datetime")
+                if isinstance(raw_date, list):
+                    raw_date = raw_date[0] if raw_date else ""
+                raw_date = (raw_date or "").strip()
                 parsed = _parse_datetime(raw_date)
                 if parsed is None:
                     continue

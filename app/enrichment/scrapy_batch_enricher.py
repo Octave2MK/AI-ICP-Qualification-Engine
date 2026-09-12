@@ -48,7 +48,7 @@ class ScrapyBatchEnricher(BaseBatchEnricher):
         # FullICPWorkflow retrouve bien le profil via
         # prospect.linkedin_url, qui lui reste sans schéma.
         return {
-            original: results.get(self._ensure_scheme(original))
+            original: results[self._ensure_scheme(original)]
             for original in linkedin_urls
             if self._ensure_scheme(original) in results
         }
