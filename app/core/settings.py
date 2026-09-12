@@ -21,6 +21,10 @@ class Settings:
     SEARCH_RETRY_DELAY: float = float(os.getenv("SEARCH_RETRY_DELAY", "1"))
     SEARCH_RATE_LIMIT_INTERVAL: float = float(os.getenv("SEARCH_RATE_LIMIT_INTERVAL", "1"))
 
+    TAVILY_API_KEY: str = field(default=os.getenv("TAVILY_API_KEY", ""), repr=False)
+    TAVILY_TIMEOUT: int = int(os.getenv("TAVILY_TIMEOUT", "15"))
+    TAVILY_MAX_RESULTS: int = int(os.getenv("TAVILY_MAX_RESULTS", "10"))
+
     PAGE_FETCHER_USER_AGENT: str = field(
         default_factory=lambda: os.getenv(
             "PAGE_FETCHER_USER_AGENT",

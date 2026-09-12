@@ -3,6 +3,7 @@ import pytest
 from app.acquisition.provider_factory import ProviderFactory
 from app.acquisition.duckduckgo_provider import DuckDuckGoProvider
 from app.acquisition.searxng_provider import SearXNGProvider
+from app.acquisition.tavily_provider import TavilyProvider
 
 
 def test_factory_returns_duckduckgo_provider():
@@ -20,6 +21,15 @@ def test_factory_returns_searxng_provider():
     assert isinstance(
         provider,
         SearXNGProvider
+    )
+
+
+def test_factory_returns_tavily_provider():
+    provider = ProviderFactory.create("tavily")
+
+    assert isinstance(
+        provider,
+        TavilyProvider
     )
 
 
