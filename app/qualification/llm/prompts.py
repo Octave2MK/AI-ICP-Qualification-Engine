@@ -84,8 +84,7 @@ QUALIFICATION RULES
 3. RECENCY AND ACTIVITY
 - If latest_post_date is present, calculate its age using the reference date.
 - A latest post within 7 days is a strong positive activity signal.
-- A latest post older than 7 days is a negative activity signal, but does NOT
-  automatically disqualify an otherwise strong commercial prospect.
+- A latest post older than 7 days is a negative activity signal, but does NOT automatically disqualify an otherwise strong commercial prospect.
 - If latest_post_date is empty, mark recency as unknown. Do not invent a date
   and do not penalize the profile solely because the date is unavailable.
 - If latest_post_text is present, use it as additional evidence about current
