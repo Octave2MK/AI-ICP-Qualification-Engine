@@ -5,9 +5,11 @@ from app.acquisition.acquisition_models import ICP
 
 
 class FakeProspect:
-    def __init__(self):
+    def __init__(self, fullname="", job_title=""):
         self.id = 1
         self.linkedin_url = "linkedin.com/in/john-doe"
+        self.fullname = fullname
+        self.job_title = job_title
 
 
 class FakeAcquisitionService:
@@ -186,3 +188,76 @@ def test_full_icp_workflow_records_error_for_empty_one_by_one_profile():
     assert len(results) == 1
     assert "error" in results[0]
     assert "profile" not in results[0]
+
+
+class FakeAcquisitionServiceWithSignal:
+    """Simule un prospect dont ProspectMapper a bien extrait un nom/métier
+    depuis le titre du résultat de recherche (ex: Tavily/SearXNG)."""
+
+    def acquire(self, db, icp):
+        return [
+            FakeProspect(fullname="John Doe", job_title="Business Coach")
+        ]
+
+
+def test_full_icp_workflow_rescues_empty_one_by_one_profile_via_fallback():
+    # Le scraping LinkedIn ne renvoie rien d'exploitable (page bloquée),
+    # mais l'acquisition avait déjà un nom/métier fiables. Le fallback,
+    # appliqué AVANT is_empty(), doit sauver ce profil plutôt que de le
+    # rejeter.
+    class EmptyOSINTEnricher:
+        def enrich(self, linkedin_url):
+            return ProfileData(
+                linkedin_url=linkedin_url,
+                name="",
+                headline="",
+                about="",
+                raw_text="Identifiez-vous pour voir le profil complet...",
+            )
+
+    workflow = FullICPWorkflow(
+        acquisition_service=FakeAcquisitionServiceWithSignal(),
+        osint_enricher=EmptyOSINTEnricher(),
+        qualification_pipeline=FakeQualificationPipeline(),
+    )
+
+    icp = ICP(job_titles=["Business Coach"], countries=["France"])
+
+    results = workflow.run(db=None, icp=icp)
+
+    assert len(results) == 1
+    assert "error" not in results[0]
+    assert results[0]["profile"].name == "John Doe"
+    assert results[0]["profile"].headline == "Business Coach"
+    assert results[0]["qualification"]["decision"] == "QUALIFIED"
+
+
+def test_full_icp_workflow_rescues_empty_batch_profile_via_fallback():
+    # Même scénario que ci-dessus, mais via le chemin batch (Scrapy).
+    batch_enricher = FakeBatchEnricher(
+        {
+            "linkedin.com/in/john-doe": ProfileData(
+                linkedin_url="linkedin.com/in/john-doe",
+                name="",
+                headline="",
+                about="",
+                raw_text="Identifiez-vous pour voir le profil complet...",
+            )
+        }
+    )
+
+    workflow = FullICPWorkflow(
+        acquisition_service=FakeAcquisitionServiceWithSignal(),
+        osint_enricher=batch_enricher,
+        qualification_pipeline=FakeQualificationPipeline(),
+    )
+
+    icp = ICP(job_titles=["Business Coach"], countries=["France"])
+
+    results = workflow.run(db=None, icp=icp)
+
+    assert len(results) == 1
+    assert "error" not in results[0]
+    assert results[0]["profile"].name == "John Doe"
+    assert results[0]["profile"].headline == "Business Coach"
+    assert results[0]["qualification"]["decision"] == "QUALIFIED"

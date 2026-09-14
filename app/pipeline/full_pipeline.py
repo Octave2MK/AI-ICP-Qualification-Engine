@@ -125,6 +125,14 @@ class FullICPWorkflow:
             try:
                 profile = enricher.enrich(prospect.linkedin_url)
 
+                # Le fallback doit s'appliquer AVANT is_empty() : sinon un
+                # scraping LinkedIn vide (page de connexion, contenu bloqué)
+                # rejette le profil avant même de lui donner une chance
+                # d'être sauvé par les signaux fiables déjà connus depuis
+                # l'acquisition (nom/métier extraits du titre du résultat
+                # de recherche par ProspectMapper).
+                self._apply_acquisition_fallback(prospect, profile)
+
                 if profile.is_empty():
                     results[index] = {
                         "prospect": prospect,
@@ -132,7 +140,6 @@ class FullICPWorkflow:
                     }
                     continue
 
-                self._apply_acquisition_fallback(prospect, profile)
                 batch_items.append((index, prospect, profile))
             except Exception as exc:
                 logger.warning(
@@ -175,14 +182,27 @@ class FullICPWorkflow:
         for index, prospect in enumerate(prospects):
             profile = profiles_by_url.get(prospect.linkedin_url)
 
-            if profile is None or profile.is_empty():
+            if profile is None:
                 results[index] = {
                     "prospect": prospect,
                     "error": "Enrichment failed or produced no profile for this URL.",
                 }
                 continue
 
+            # Même raisonnement que dans _enrich_one_by_one : le fallback
+            # doit s'appliquer avant is_empty(), sinon un item Scrapy
+            # produit à partir d'une page LinkedIn bloquée/vide (name="",
+            # about="") est rejeté avant de pouvoir être sauvé par les
+            # signaux fiables déjà connus depuis l'acquisition.
             self._apply_acquisition_fallback(prospect, profile)
+
+            if profile.is_empty():
+                results[index] = {
+                    "prospect": prospect,
+                    "error": "Enrichment failed or produced no profile for this URL.",
+                }
+                continue
+
             batch_items.append((index, prospect, profile))
 
         return batch_items

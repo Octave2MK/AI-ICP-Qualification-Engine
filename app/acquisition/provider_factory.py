@@ -2,6 +2,7 @@ from app.acquisition.search_provider import SearchProvider
 from app.acquisition.duckduckgo_provider import DuckDuckGoProvider
 from app.acquisition.searxng_provider import SearXNGProvider
 from app.acquisition.tavily_provider import TavilyProvider
+from app.acquisition.serpapi_provider import SerpApiProvider
 
 
 class ProviderFactory:
@@ -24,6 +25,9 @@ class ProviderFactory:
 
         if provider_name == "tavily":
             return TavilyProvider()
+
+        if provider_name == "serpapi":
+            return SerpApiProvider()
 
         raise ValueError(
             f"Unknown search provider: {provider_name}"

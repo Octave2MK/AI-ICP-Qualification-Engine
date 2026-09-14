@@ -4,6 +4,7 @@ from app.acquisition.provider_factory import ProviderFactory
 from app.acquisition.duckduckgo_provider import DuckDuckGoProvider
 from app.acquisition.searxng_provider import SearXNGProvider
 from app.acquisition.tavily_provider import TavilyProvider
+from app.acquisition.serpapi_provider import SerpApiProvider
 
 
 def test_factory_returns_duckduckgo_provider():
@@ -30,6 +31,15 @@ def test_factory_returns_tavily_provider():
     assert isinstance(
         provider,
         TavilyProvider
+    )
+
+
+def test_factory_returns_serpapi_provider():
+    provider = ProviderFactory.create("serpapi")
+
+    assert isinstance(
+        provider,
+        SerpApiProvider
     )
 
 
