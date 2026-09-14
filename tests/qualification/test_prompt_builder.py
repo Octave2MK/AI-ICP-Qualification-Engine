@@ -3,7 +3,7 @@ from app.qualification.icp.icp_definition import ICPDefinition
 from app.qualification.llm.prompts import PromptBuilder
 
 
-def test_prompt_requires_real_offer_and_recent_latest_post():
+def test_prompt_uses_recency_as_a_signal_not_a_gate():
     profile = ProfileData(
         linkedin_url="https://www.linkedin.com/in/example",
         name="Jane Doe",
@@ -25,13 +25,13 @@ def test_prompt_requires_real_offer_and_recent_latest_post():
     prompt = PromptBuilder().build(profile, icp)
 
     assert "real commercial offer" in prompt.lower()
-    assert "latest_post_date" in prompt.lower()
-    assert "7 days or less" in prompt
-    assert "older than 7 days" in prompt
+    assert "7 days is a strong positive activity signal" in prompt
+    assert "does NOT automatically disqualify" in prompt
+    assert "recency is a supporting signal, not a mandatory gate" in prompt.lower()
     assert "2026-09-09" in prompt
 
 
-def test_prompt_does_not_invent_missing_post_date():
+def test_prompt_does_not_penalize_missing_post_date():
     profile = ProfileData(
         linkedin_url="https://www.linkedin.com/in/example",
         name="Jane Doe",
@@ -43,4 +43,5 @@ def test_prompt_does_not_invent_missing_post_date():
     prompt = PromptBuilder().build(profile)
 
     assert "No latest post could be identified" in prompt
-    assert "do not invent or estimate a date" in prompt
+    assert "mark recency as unknown" in prompt.lower()
+    assert "do not penalize the profile solely because the date is unavailable" in prompt.lower()
