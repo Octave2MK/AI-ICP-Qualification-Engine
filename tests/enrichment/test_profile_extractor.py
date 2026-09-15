@@ -6,7 +6,10 @@ HTML = """
     <head>
         <title>Jean Dupont | Consultant Marketing</title>
         <meta property="og:title" content="Jean Dupont | Consultant Marketing">
-        <meta property="og:description" content="J'aide les entreprises à développer leur activité.">
+        <meta
+            property="og:description"
+            content="J'aide les entreprises à développer leur activité."
+        >
     </head>
     <body>
         <h1>Jean Dupont</h1>

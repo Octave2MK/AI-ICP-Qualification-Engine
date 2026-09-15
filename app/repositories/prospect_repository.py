@@ -45,7 +45,29 @@ class ProspectRepository:
         )
 
         if existing:
+            # Un même prospect peut être retrouvé lors de runs successifs
+            # (recherche déterministe côté Tavily/SerpApi). La ligne
+            # existante peut avoir été créée par une version antérieure du
+            # pipeline, avec un fullname/job_title vide ou obsolète — la
+            # renvoyer telle quelle empêcherait le fallback d'acquisition
+            # de jamais fonctionner pour ce prospect, quel que soit le
+            # nombre de corrections apportées depuis.
+            updated = False
+
+            if prospect.fullname and prospect.fullname != existing.fullname:
+                existing.fullname = prospect.fullname
+                updated = True
+
+            if prospect.job_title and prospect.job_title != existing.job_title:
+                existing.job_title = prospect.job_title
+                updated = True
+
+            if updated:
+                db.commit()
+                db.refresh(existing)
+
             return existing
+
         return self.create(
             db,
             prospect,

@@ -35,9 +35,12 @@ class ProfileExtractor(BaseExtractor):
     @staticmethod
     def _meta_content(soup: BeautifulSoup, property_name: str) -> str:
         tag = soup.find("meta", attrs={"property": property_name})
-        if tag and tag.get("content"):
-            return tag["content"].strip()
-        return ""
+        if not tag:
+            return ""
+        content = tag.get("content")
+        if isinstance(content, list):
+            content = content[0] if content else ""
+        return (content or "").strip()
 
     @staticmethod
     def _extract_name(soup: BeautifulSoup, title: str) -> str:

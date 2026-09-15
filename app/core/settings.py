@@ -23,11 +23,11 @@ class Settings:
 
     TAVILY_API_KEY: str = field(default=os.getenv("TAVILY_API_KEY", ""), repr=False)
     TAVILY_TIMEOUT: int = int(os.getenv("TAVILY_TIMEOUT", "15"))
-    TAVILY_MAX_RESULTS: int = int(os.getenv("TAVILY_MAX_RESULTS", "10"))
+    TAVILY_MAX_RESULTS: int = int(os.getenv("TAVILY_MAX_RESULTS", "20"))
 
     SERPAPI_API_KEY: str = field(default=os.getenv("SERPAPI_API_KEY", ""), repr=False)
     SERPAPI_TIMEOUT: int = int(os.getenv("SERPAPI_TIMEOUT", "15"))
-    SERPAPI_MAX_RESULTS: int = int(os.getenv("SERPAPI_MAX_RESULTS", "10"))
+    SERPAPI_MAX_RESULTS: int = int(os.getenv("SERPAPI_MAX_RESULTS", "20"))
 
     PAGE_FETCHER_USER_AGENT: str = field(
         default_factory=lambda: os.getenv(
